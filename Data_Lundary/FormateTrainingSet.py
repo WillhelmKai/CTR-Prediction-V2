@@ -12,9 +12,6 @@ import pandas as pd
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
 
-TextOnlyAdd = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
-#DataFrame = pd.DataFrame(json.loads(open(TextOnlyAdd,'r+').read()))
-
 #form up dictionary for brand and categories
 
 #for each user
