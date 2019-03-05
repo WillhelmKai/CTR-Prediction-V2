@@ -11,8 +11,7 @@ import pandas as pd
 #[UserID[1],behavior[multi-dimension](asin, brand, categories, unixReviewTime, price, overall),
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
-BrandDic = []
-CateDic = []
+
 TextOnlyAdd = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 #DataFrame = pd.DataFrame(json.loads(open(TextOnlyAdd,'r+').read()))
 
