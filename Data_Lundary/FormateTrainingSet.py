@@ -16,17 +16,6 @@ TextOnlyAdd = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\
 #DataFrame = pd.DataFrame(json.loads(open(TextOnlyAdd,'r+').read()))
 
 #form up dictionary for brand and categories
-a = 0
-with open(TextOnlyAdd) as f:
-    line = f.readline()
-    while line:
-        print(line)
-        a = a+1
-        if (a > 2):
-            break
-    # d = json.loads(line)
-    # print(d)
-    f.close()
 
 #for each user
     #archave all the behavior into a list
