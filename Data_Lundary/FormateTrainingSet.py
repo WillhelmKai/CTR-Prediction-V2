@@ -18,7 +18,6 @@ TextOnlyAdd = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\
 #form up dictionary for brand and categories
 
 #for each user
-    #archave all the behavior into a list
     #prograssivly generate true and false able and record
     #dump into json
 
