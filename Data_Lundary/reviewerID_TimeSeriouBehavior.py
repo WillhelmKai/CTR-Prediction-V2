@@ -57,6 +57,13 @@ print(result.head())
 #reviewerID, asin, categories, price, brand, overall, unixReviewTime
 # ————————————————————————————
 
+#sample out
+sample_output = result.ix[0:10]
+sample_output = sample_output.to_json(orient = 'records')
+dd = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnlySample.json'
+j_str = json.dumps(sample_output)
+with open(dd, 'w') as f:
+    f.write(j_str)
 #dump json
 # result = result.to_json(orient = 'records')
 # j_str = json.dumps(result)
