@@ -56,7 +56,16 @@ print(result.head())
 # ————————————————————————————
 
 #sample out
+# dd = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnlySample.json'
 #dump json
+# out = result.to_json(orient = 'records')[1:-1].replace('},{', '},'+'\n'+'{')
+
+
+# out = result.to_json(orient = 'records')[1:-1]
+# with open(destination, 'w') as f:
+#     f.write(out)
+
+
 # ————————————————————————————
 #the end
 # ————————————————————————————
