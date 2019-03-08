@@ -3,7 +3,6 @@
 import json
 import gzip
 import pandas as pd
-#function convert brand into binary hash map
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer 
 pd.set_option('display.max_columns', 10000, 'display.max_rows', 10000)
