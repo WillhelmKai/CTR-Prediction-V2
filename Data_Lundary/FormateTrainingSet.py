@@ -48,6 +48,7 @@ df = pd.read_json(data_str, lines= True)
 # ————————————————————————————
 # ————————————————————————————
 df = df[0:int(len(df)*0.1)]
+# df = df[0:int(len(df)*0.5)]
 
 # ————————————————————————————
 # ————————————————————————————
@@ -92,23 +93,40 @@ for reviewerID in reviewID_dic.itertuples(index = False):
     #prograssivly generate true and false able and record
     if (len(his_behavior) >= lower_boundary):
         # his_behavior.ix[0,len(his_behavior),['categories']] = his_behavior.ix[0,len(his_behavior),['categories']][0][0]
-        for i in range(lower_boundary ,len(his_behavior)): #select the behavior sequence number as the candidata ad
-            behavior = his_behavior.loc[0:i-1] #historical behavior
-            behavior = behavior.to_records()
+        behavior = his_behavior.ix[0:len(his_behavior)-1] #historical behavior
+        behavior = behavior.to_records()
 
-            candidate_true = his_behavior.loc[i] #candidate ad
-            candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
+        candidate_true = his_behavior.ix[len(his_behavior)] #candidate ad
+        candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
 
-            # #generate true record
-            t = {'behavior':behavior,'candidateAd':candidate_true, 'label' : 1 }
-            df_result.append(t)
-            #generate false record
-            d = {'behavior':behavior,'candidateAd':candidate_false, 'label' : 0 }
-            df_result.append(d)
-    else:#skip customers who have insufficient bahavior
-        pass
+        # #generate true record
+        t = {'behavior':behavior,'candidateAd':candidate_true, 'label' : 1 }
+        df_result.append(t)
+        #generate false record
+        d = {'behavior':behavior,'candidateAd':candidate_false, 'label' : 0 }
+        df_result.append(d)
+
+
+
+    #     for i in range(lower_boundary ,len(his_behavior)): #select the behavior sequence number as the candidata ad
+    #         behavior = his_behavior.loc[0:i-1] #historical behavior
+    #         behavior = behavior.to_records()
+
+    #         candidate_true = his_behavior.loc[i] #candidate ad
+    #         candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
+
+    #         # #generate true record
+    #         t = {'behavior':behavior,'candidateAd':candidate_true, 'label' : 1 }
+    #         df_result.append(t)
+    #         #generate false record
+    #         d = {'behavior':behavior,'candidateAd':candidate_false, 'label' : 0 }
+    #         df_result.append(d)
+    # else:#skip customers who have insufficient bahavior
+    #     pass
+
+
     acc = acc+1
-    if (acc%500000):
+    if (acc%50000000):
         print(acc/len(df))
 df_result = pd.DataFrame.from_records(np.asarray(df_result))
 print(df_result.head())
