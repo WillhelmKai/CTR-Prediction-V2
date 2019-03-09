@@ -40,8 +40,11 @@ def getDF(path):
 # ————————————————————————————
 #destination
 traning_set_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.json'
-
 text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
+
+# traning_set_add = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.json'
+# text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
+
 data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
 
@@ -126,7 +129,7 @@ for reviewerID in reviewID_dic.itertuples(index = False):
 
     acc = acc+1
     if (acc%5000):
-        print('\r', acc/len(reviewID_dic).ljust(10),end='')
+        print('\r', int(acc/len(reviewID_dic)).ljust(10),end='')
 df_result = pd.DataFrame.from_records(np.asarray(df_result))
 print(df_result.head())
 out = df_result.to_json(orient='records')
