@@ -126,7 +126,7 @@ for reviewerID in reviewID_dic.itertuples(index = False):
 
     acc = acc+1
     if (acc%5000):
-        print('\r', acc/len(reviewerID).ljust(10),end='')
+        print('\r', acc/len(reviewID_dic).ljust(10),end='')
 df_result = pd.DataFrame.from_records(np.asarray(df_result))
 print(df_result.head())
 out = df_result.to_json(orient='records')
