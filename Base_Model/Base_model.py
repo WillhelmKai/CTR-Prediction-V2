@@ -13,14 +13,6 @@ json_add ="C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\back
 #[behavior[multi-dimension, numpy array stored data Frame](asin, brand, categories, unixReviewTime, price, overall),
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
-# ————————————————————————————
-#input
-# ————————————————————————————
-df= pd.read_json(open(json_add).read(), lines=True)
-dr = np.array(df).reshape((-1,1))
-np.random.shuffle(dr)
-dr_train = dr[:int(len(dr)*0.7)]
-dr_test = dr[int(len(dr)*0.7):]
 
 # ————————————————————————————
 #Embedding Layer start
@@ -54,6 +46,14 @@ dr_test = dr[int(len(dr)*0.7):]
 #NN end
 # ————————————————————————————
 
+# ————————————————————————————
+#input
+# ————————————————————————————
+df= pd.read_json(open(json_add).read(), lines=True)
+dr = np.array(df).reshape((-1,1))
+np.random.shuffle(dr)
+dr_train = dr[:int(len(dr)*0.7)]
+dr_test = dr[int(len(dr)*0.7):]
 # ————————————————————————————
 #training start
 # ————————————————————————————
