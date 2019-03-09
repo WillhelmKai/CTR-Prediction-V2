@@ -50,7 +50,7 @@ df = pd.read_json(data_str, lines= True)
 
 # ————————————————————————————
 # ————————————————————————————
-df = df[0:int(len(df)*0.1)]
+df = df[0:int(len(df)*0.01)]
 
 # ————————————————————————————
 # ————————————————————————————
@@ -129,7 +129,7 @@ for reviewerID in reviewID_dic.itertuples(index = False):
 
     acc = acc+1
     if (acc%5000):
-        print('\r', int(acc/len(reviewID_dic)).ljust(10),end='')
+        print('\r', str(acc/len(reviewID_dic)).ljust(10),end='')
 df_result = pd.DataFrame.from_records(np.asarray(df_result))
 print(df_result.head())
 out = df_result.to_json(orient='records')
