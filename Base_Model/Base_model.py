@@ -5,7 +5,7 @@ import numpy as np
 import os
 # import tensorflow as tf
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 json_add ="C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\back\\TrainingSet.json"
 # ————————————————————————————
@@ -16,15 +16,11 @@ json_add ="C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\back
 # ————————————————————————————
 #input
 # ————————————————————————————
-def read_records(add):
-    training_set = 0
-    testing_set = 0
-    dr= pd.read_json(open(add).read(), lines=True)
-    dr = pd.DataFrame.as_matrix(dr)
-    print(dr.shape())
-    return training_set, testing_set
-
-read_records(json_add)
+df= pd.read_json(open(json_add).read(), lines=True)
+dr = np.array(df).reshape((-1,1))
+np.random.shuffle(dr)
+dr_train = dr[:int(len(dr)*0.7)]
+dr_test = dr[int(len(dr)*0.7):]
 
 # ————————————————————————————
 #Embedding Layer start
