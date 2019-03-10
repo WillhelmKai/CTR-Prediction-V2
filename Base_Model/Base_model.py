@@ -13,7 +13,16 @@ json_add ="C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\back
 #[behavior[multi-dimension, numpy array stored data Frame](asin, brand, categories, unixReviewTime, price, overall),
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
-
+df= pd.read_json(open(json_add).read(), lines=True)
+dr = np.array(df).reshape((-1,1))
+np.random.shuffle(dr)
+dr = dr.tolist()
+l = []
+for record in dr:
+    l.append(record[0])
+behavior = [d['behavior'] for d in l]
+candidateAd = [d['candidateAd'] for d in l]
+label = [d['label'] for d in l]
 # ————————————————————————————
 #Embedding Layer start
 # ————————————————————————————
@@ -49,23 +58,7 @@ json_add ="C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\back
 # ————————————————————————————
 #input
 # ————————————————————————————
-df= pd.read_json(open(json_add).read(), lines=True)
-dr = np.array(df).reshape((-1,1))
-np.random.shuffle(dr)
-dr = dr.tolist()
-print(dr[0][0])
-#creat a np array to contain x and y
-x_behavior = dr[0:len(dr)]['behavior']
-print(x_behavior[0])
-print("   ")
 
-x_candidateAd = dr[0:len(dr)]['candidateAd']
-print(x_candidateAd[0])
-print("   ")
-
-label = dr[0:len(dr)]['label']
-print(label[0])
-print("   ")
 # dr_train = dr[:int(len(dr)*0.7)]
 # dr_test = dr[int(len(dr)*0.7):]
 
