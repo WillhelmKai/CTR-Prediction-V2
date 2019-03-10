@@ -98,17 +98,17 @@ for reviewerID in reviewID_dic.itertuples(index = False):
         for i in range(lower_boundary ,len(his_behavior)): #select the behavior sequence number as the candidata ad
             behavior = his_behavior.loc[0:i-1]['categories'] #historical behavior
             behavior_categories = convert_to_numpy(behavior)
+            candidate_true = his_behavior.loc[i]['categories'] #candidate ad
+            
             print("   shape of behavior ")
             print(behavior_categories.shape)
-            print(behavior_categories)
-            # behavior = behavior.to_records()
             print("  ")
-            candidate_true = his_behavior.loc[i]['categories'] #candidate ad
+            print(candidate_true.shape)
             print(candidate_true)
 
             example = tf.train.Example(features = tf.train.Features(feature = {
-            'candidate_categories':_float_feature(candidate_true),
-            'behavior_categories':_float_feature(behavior_categories)
+            'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true.astype(np.float64).tostring()])),
+            'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()]))
             }))
             # candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
             # # #generate true record
