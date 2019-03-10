@@ -23,6 +23,26 @@ for record in dr:
 behavior = [d['behavior'] for d in l]
 candidateAd = [d['candidateAd'] for d in l]
 label = [d['label'] for d in l]
+
+
+#reviewerID, asin, categories, price, brand, overall, unixReviewTime
+
+for behavior_for_one_comstomer in behavior:
+    for one_behavior in behavior_for_one_comstomer:
+        cate =one_behavior[2] #might can be mini batch for a user's behavior as a package
+        brand = one_behavior[3]
+        price = one_behavior[5]
+        review_time = one_behavior[7]
+        print(cate)
+        print("   ")
+        print(brand)
+        print("   ")
+        print(price)
+        print("   ")
+        print(review_time)
+        print("   ")
+        break
+    break
 # ————————————————————————————
 #Embedding Layer start
 # ————————————————————————————
