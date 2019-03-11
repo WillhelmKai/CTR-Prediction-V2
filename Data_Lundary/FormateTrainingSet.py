@@ -87,7 +87,6 @@ reviewID_dic = df[['reviewerID']].drop_duplicates().reset_index(drop=True)
 # ————————————————————————————
 lower_boundary = 3  #if the num of user behavior lower than this num, record will be abandoned 
 acc = 0
-df_result = [] #final datastructure to store 
 writer = tf.python_io.TFRecordWriter(tfrecord)
 for reviewerID in reviewID_dic.itertuples(index = False):
     #search all his or her historical behaviors sorted by time
@@ -96,28 +95,52 @@ for reviewerID in reviewID_dic.itertuples(index = False):
     if (len(his_behavior) >= lower_boundary):
         # his_behavior.ix[0,len(his_behavior),['categories']] = his_behavior.ix[0,len(his_behavior),['categories']][0][0]
         for i in range(lower_boundary ,len(his_behavior)): #select the behavior sequence number as the candidata ad
-            behavior = his_behavior.loc[0:i-1]['categories'] #historical behavior
-            behavior_categories = convert_to_numpy(behavior)
-            candidate_true = his_behavior.loc[i]['categories'] #candidate ad
-            
-            print("   shape of behavior ")
-            print(behavior_categories.shape)
-            print("  ")
-            print(candidate_true.shape)
-            print(candidate_true)
+            behavior_asin = convert_to_numpy(his_behavior.loc[0:i-1]['asin'])
+            behavior_categories = convert_to_numpy(his_behavior.loc[0:i-1]['categories']) #historical behavior categories
+            behavior_brand = convert_to_numpy(his_behavior.loc[0:i-1]['brand'])
+            behavior_price = convert_to_numpy(his_behavior.loc[0:i-1]['price'])
+            behavior_review_time = convert_to_numpy(his_behavior.loc[0:i-1]['unixReviewTime'])
+
+            candidate_true_asin = his_behavior.loc[i]['asin']
+            candidate_true_categories = his_behavior.loc[i]['categories'] #candidate ad
+            candidate_true_brand = his_behavior.loc[i]['brand']
+            candidate_true_price = his_behavior.loc[i]['price']
+            true_label = 1.0
+
 
             example = tf.train.Example(features = tf.train.Features(feature = {
-            'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true.astype(np.float64).tostring()])),
-            'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()]))
+            'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_asin.astype(np.str).tostring()])),
+            'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()])),
+            'behavior_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_brand.astype(np.float64).tostring()])),
+            'behavior_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_price.astype(np.float64).tostring()])),
+            'behavior_review_time':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_review_time.astype(np.float64).tostring()])),
+            'candidate_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_asin).tostring()])),
+            'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_categories.astype(np.float64).tostring()])),
+            'candidate_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_brand.astype(np.float64).tostring()])),
+            'candidate_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_price).tostring()])),
+            'label':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(true_label).tostring()]))
             }))
-            # candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
-            # # #generate true record
-            # t = {'behavior':behavior,'candidateAd':candidate_true, 'label' : 1 }
-            # df_result.append(t)
-            # #generate false record
-            # d = {'behavior':behavior,'candidateAd':candidate_false, 'label' : 0 }
-            # df_result.append(d)
             writer.write(example.SerializeToString())
+
+            candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
+            candidate_true_asin = candidate_false['asin']
+            candidate_true_categories = candidate_false['categories'] #candidate ad
+            candidate_true_brand = candidate_false['brand']
+            candidate_true_price = candidate_false['price']
+            false_label = 0.0
+
+            example = tf.train.Example(features = tf.train.Features(feature = {
+            'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_asin.astype(np.str).tostring()])),
+            'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()])),
+            'behavior_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_brand.astype(np.float64).tostring()])),
+            'behavior_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_price.astype(np.float64).tostring()])),
+            'behavior_review_time':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_review_time.astype(np.float64).tostring()])),
+            'candidate_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_asin).tostring()])),
+            'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_categories.astype(np.float64).tostring()])),
+            'candidate_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_brand.astype(np.float64).tostring()])),
+            'candidate_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_price).tostring()])),
+            'label':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(true_label).tostring()]))
+            }))
 
 
     else:#skip customers who have insufficient bahavior
