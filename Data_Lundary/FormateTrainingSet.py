@@ -38,19 +38,18 @@ def convert_to_numpy(input):
 # ————————————————————————————
 #destination
 # traning_set_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.json'
-tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-
-text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
+# tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+# text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
 # traning_set_add = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.json'
-# text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
+tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSetOneBehavior.tfrecords'
+text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
 
 data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
 # ————————————————————————————
 # ————————————————————————————
-df = df[0:int(len(df)*0.01)]
-
+# df = df[0:int(len(df)*0.01)]
 # ————————————————————————————
 # ————————————————————————————
 # creat empty list with the length of df 
@@ -80,13 +79,12 @@ print("finished")
 # select columns and remove ruplicate
 print("forming reviewer dictionary")
 reviewID_dic = df[['reviewerID']].drop_duplicates().reset_index(drop=True)
-# print("re: "+str(reviewID_dic.columns ))
-
 # ————————————————————————————
 #make up training set
 # ————————————————————————————
 lower_boundary = 3  #if the num of user behavior lower than this num, record will be abandoned 
 acc = 0
+no_value = 0 
 writer = tf.python_io.TFRecordWriter(tfrecord)
 for reviewerID in reviewID_dic.itertuples(index = False):
     #search all his or her historical behaviors sorted by time
@@ -94,7 +92,7 @@ for reviewerID in reviewID_dic.itertuples(index = False):
     #prograssivly generate true and false able and record
     if (len(his_behavior) >= lower_boundary):
         # his_behavior.ix[0,len(his_behavior),['categories']] = his_behavior.ix[0,len(his_behavior),['categories']][0][0]
-        for i in range(lower_boundary ,len(his_behavior)): #select the behavior sequence number as the candidata ad
+        for i in range(len(his_behavior)-1 ,len(his_behavior)): #select the behavior sequence number as the candidata ad
             behavior_asin = convert_to_numpy(his_behavior.loc[0:i-1]['asin'])
             behavior_categories = convert_to_numpy(his_behavior.loc[0:i-1]['categories']) #historical behavior categories
             behavior_brand = convert_to_numpy(his_behavior.loc[0:i-1]['brand'])
@@ -106,58 +104,51 @@ for reviewerID in reviewID_dic.itertuples(index = False):
             candidate_true_brand = his_behavior.loc[i]['brand']
             candidate_true_price = his_behavior.loc[i]['price']
             true_label = 1.0
+            try:
+                example = tf.train.Example(features = tf.train.Features(feature = {
+                'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_asin.astype(np.str).tostring()])),
+                'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()])),
+                'behavior_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_brand.astype(np.float64).tostring()])),
+                'behavior_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_price.astype(np.float64).tostring()])),
+                'behavior_review_time':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_review_time.astype(np.float64).tostring()])),
+                'candidate_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_asin).tostring()])),
+                'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_categories.astype(np.float64).tostring()])),
+                'candidate_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_brand.astype(np.float64).tostring()])),
+                'candidate_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_price).tostring()])),
+                'label':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(true_label).tostring()]))
+                }))
+                writer.write(example.SerializeToString())
 
+                candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
+                candidate_true_asin = candidate_false['asin']
+                candidate_true_categories = candidate_false['categories'] #candidate ad
+                candidate_true_brand = candidate_false['brand']
+                candidate_true_price = candidate_false['price']
+                false_label = 0.0
 
-            example = tf.train.Example(features = tf.train.Features(feature = {
-            'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_asin.astype(np.str).tostring()])),
-            'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()])),
-            'behavior_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_brand.astype(np.float64).tostring()])),
-            'behavior_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_price.astype(np.float64).tostring()])),
-            'behavior_review_time':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_review_time.astype(np.float64).tostring()])),
-            'candidate_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_asin).tostring()])),
-            'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_categories.astype(np.float64).tostring()])),
-            'candidate_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_brand.astype(np.float64).tostring()])),
-            'candidate_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_price).tostring()])),
-            'label':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(true_label).tostring()]))
-            }))
-            writer.write(example.SerializeToString())
-
-            candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
-            candidate_true_asin = candidate_false['asin']
-            candidate_true_categories = candidate_false['categories'] #candidate ad
-            candidate_true_brand = candidate_false['brand']
-            candidate_true_price = candidate_false['price']
-            false_label = 0.0
-
-            example = tf.train.Example(features = tf.train.Features(feature = {
-            'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_asin.astype(np.str).tostring()])),
-            'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()])),
-            'behavior_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_brand.astype(np.float64).tostring()])),
-            'behavior_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_price.astype(np.float64).tostring()])),
-            'behavior_review_time':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_review_time.astype(np.float64).tostring()])),
-            'candidate_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_asin).tostring()])),
-            'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_categories.astype(np.float64).tostring()])),
-            'candidate_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_brand.astype(np.float64).tostring()])),
-            'candidate_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_price).tostring()])),
-            'label':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(true_label).tostring()]))
-            }))
-
-
-    else:#skip customers who have insufficient bahavior
-        pass
+                example = tf.train.Example(features = tf.train.Features(feature = {
+                'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_asin.astype(np.str).tostring()])),
+                'behavior_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_categories.astype(np.float64).tostring()])),
+                'behavior_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_brand.astype(np.float64).tostring()])),
+                'behavior_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_price.astype(np.float64).tostring()])),
+                'behavior_review_time':tf.train.Feature(bytes_list = tf.train.BytesList(value = [behavior_review_time.astype(np.float64).tostring()])),
+                'candidate_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_asin).tostring()])),
+                'candidate_categories':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_categories.astype(np.float64).tostring()])),
+                'candidate_brand':tf.train.Feature(bytes_list = tf.train.BytesList(value = [candidate_true_brand.astype(np.float64).tostring()])),
+                'candidate_price':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(candidate_true_price).tostring()])),
+                'label':tf.train.Feature(bytes_list = tf.train.BytesList(value = [np.asarray(false_label).tostring()]))
+                }))
+            except Exception as e:
+                no_value = no_value+1
     acc = acc+1
-    break
+    # break
     if (acc%5000):
         print('\r', str(acc/len(reviewID_dic)).ljust(10),end='')
-df_result = pd.DataFrame.from_records(np.asarray(df_result))
 writer.close()
-# test = pd.read_json(out, lines= True)
-# print("---------------")
-# print(test.head().reset_index(drop=True))
 
-# with open(traning_set_add, 'a') as f:
-#     f.write(out)
-
+print("Tfrecord generating done")
+print("total record  "+str(acc))
+print("no value record "+str(no_value))
 # ————————————————————————————
 # the end
 # ————————————————————————————
