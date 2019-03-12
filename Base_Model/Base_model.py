@@ -28,7 +28,7 @@ features = tf.parse_single_example(serialized_example,
             'behavior_brand': tf.FixedLenFeature([], tf.string),
             'behavior_price': tf.FixedLenFeature([], tf.string),
             'behavior_review_time': tf.FixedLenFeature([], tf.string),
-            # 'candidate_asin': tf.FixedLenFeature([], tf.string),
+            'candidate_asin': tf.FixedLenFeature([], tf.string),
             'candidate_categories':tf.FixedLenFeature([], tf.string),
             'candidate_brand':tf.FixedLenFeature([], tf.string),
             'candidate_price':tf.FixedLenFeature([], tf.string),
@@ -37,52 +37,48 @@ features = tf.parse_single_example(serialized_example,
 # features = tf.train.batch(features, batch_size = 1, capacity = 10 )
 features = tf.train.shuffle_batch(features, batch_size=1, capacity=20, min_after_dequeue=10, num_threads=1)
 
+
+
+bc_out = tf.cast(tf.decode_raw(features['behavior_categories'], tf.uint8), tf.float32)
+bb_out = tf.cast(tf.decode_raw(features['behavior_brand'], tf.uint8), tf.float32)
+bp_out = tf.cast(tf.decode_raw(features['behavior_price'], tf.uint8), tf.float32)
+brt_out = tf.cast(tf.decode_raw(features['behavior_review_time'], tf.uint8), tf.float32)
+cc_out = tf.cast(tf.decode_raw(features['candidate_categories'], tf.uint8), tf.float32)
+cb_out = tf.cast(tf.decode_raw(features['candidate_brand'], tf.uint8), tf.float32)
+cp_out = tf.cast(tf.decode_raw(features['candidate_price'], tf.uint8), tf.float32)
+
 ba_out = features['behavior_asin']
-
-bc_out = tf.decode_raw(features['behavior_categories'], tf.uint8)
-bc_out = tf.cast(bc_out, tf.float32)
-
-bb_out = tf.decode_raw(features['behavior_brand'], tf.uint8)
-bb_out = tf.cast(bb_out, tf.float32)
-
-bp_out = tf.decode_raw(features['behavior_price'], tf.uint8)
-bp_out = tf.cast(bp_out, tf.float32)
-
-brt_out = tf.decode_raw(features['behavior_review_time'], tf.uint8)
-brt_out = tf.cast(brt_out, tf.float32)
-
-# ca_out = features['candidate_asin']
-
-cc_out = tf.decode_raw(features['candidate_categories'], tf.uint8)
-cc_out = tf.cast(cc_out, tf.float32)
-
-cb_out = tf.decode_raw(features['candidate_brand'], tf.uint8)
-cb_out = tf.cast(cb_out, tf.float32)
-
-cp_out = tf.decode_raw(features['candidate_price'], tf.uint8)
-cp_out = tf.cast(cp_out, tf.float32)
-
+ca_out = features['candidate_asin']
 l_out = features['label']
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     tf.train.start_queue_runners(sess=sess)
 
+    print(sess.run(l_out))
+    print("    ")
+    print(sess.run(ca_out))
+    print("    ")
     print(sess.run(ba_out))
-    # cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
-    # brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
-    # print(brt_val)
-    # print("    ")
-    # print(bp_val)
-    # print("    ")
-    # print(bb_val)
-    # print("    ")
-    # print(bc_val)
-    # print("shape of cc "+str(cc_val.shape))
-    # print("shape of bc "+str(bc_val.shape))
-    # print("   ")
-    # print("shape of cb "+str(cb_val.shape))
-    # print("shape of bb "+str(bb_val.shape))
+    print("    ")
+    cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
+    brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
+    print(brt_val)
+    print("    ")
+    print(bp_val)
+    print("    ")
+    print(bb_val)
+    print("    ")
+    print(bc_val)
+    print("    ")
+    print(cc_val)
+    print("    ")
+    print(cb_val)
+    print("    ")
+    print(cp_val)
+    print("    ")
+    print(l_val)
+
 
 
 # df= pd.read_json(open(json_add).read(), lines=True)
