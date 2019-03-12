@@ -80,35 +80,6 @@ with tf.Session() as sess:
     print(l_val)
 
 
-
-# df= pd.read_json(open(json_add).read(), lines=True)
-# dr = np.array(df).reshape((-1,1))
-# np.random.shuffle(dr)
-# dr = dr.tolist()
-# l = []
-# for record in dr:
-#     l.append(record[0])
-# behavior = [d['behavior'] for d in l]
-# candidateAd = [d['candidateAd'] for d in l]
-# label = [d['label'] for d in l]
-
-# #reviewerID, asin, categories[3526], price, brand[738], overall, unixReviewTime
-
-# for behavior_for_one_comstomer in behavior:
-#     for one_behavior in behavior_for_one_comstomer:
-#         cate =one_behavior[2] #might can be mini batch for a user's behavior as a package
-#         brand = one_behavior[3]
-#         price = one_behavior[5]
-#         review_time = one_behavior[7]
-#         print(cate)
-#         print(len(cate))
-#         print("   ")
-#         print(brand)
-#         print(len(brand))
-#         print("   ")
-#         print(price)
-#         print("   ")
-#         print(review_time)
 #         print("   ")
 #         break
 #     break
