@@ -41,18 +41,18 @@ def _bytes_feature(value):
 # ————————————————————————————
 #destination
 # traning_set_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.json'
-tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecord'
-text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
+# tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecord'
+# text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
 # traning_set_add = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.json'
-# tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSetOneBehavior.tfrecords'
-# text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
+tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
 
 data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
 # ————————————————————————————
 # ————————————————————————————
-df = df[0:int(len(df)*0.01)]
+# df = df[0:int(len(df)*0.01)]
 # ————————————————————————————
 # ————————————————————————————
 # creat empty list with the length of df 
