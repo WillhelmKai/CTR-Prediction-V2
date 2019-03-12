@@ -80,10 +80,6 @@ with tf.Session() as sess:
     print(l_val)
 
 
-#         print("   ")
-#         break
-#     break
-
 # ————————————————————————————
 #Embedding Layer start
 # ————————————————————————————
