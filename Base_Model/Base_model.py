@@ -5,19 +5,17 @@ from tensorflow.contrib import slim
 import pandas as pd
 import numpy as np
 import os
-
-filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecord'
 #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-# json_add ="C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\back\\TrainingSet.json"
-# json_add = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.json'
+filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+# filename = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 
-# ————————————————————————————
-#record strcuture: ID192403  review1689188
+# ———————————————————————————— 
+#record strcuture: ID192403  review1689188 with total 192403 records
 #[behavior[multi-dimension, numpy array stored data Frame](asin, brand, categories, unixReviewTime, price, overall),
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
-
+epoch = 1
 filename_queue = tf.train.string_input_producer([filename], num_epochs=None)
 reader = tf.TFRecordReader()
 _, serialized_example = reader.read(filename_queue)
@@ -34,10 +32,7 @@ features = tf.parse_single_example(serialized_example,
             'candidate_price':tf.FixedLenFeature([], tf.string),
             'label': tf.FixedLenFeature([], tf.float32)
         })
-# features = tf.train.batch(features, batch_size = 1, capacity = 10 )
 features = tf.train.shuffle_batch(features, batch_size=1, capacity=20, min_after_dequeue=10, num_threads=1)
-
-
 
 bc_out = tf.cast(tf.decode_raw(features['behavior_categories'], tf.uint8), tf.float32)
 bb_out = tf.cast(tf.decode_raw(features['behavior_brand'], tf.uint8), tf.float32)
@@ -55,14 +50,14 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     tf.train.start_queue_runners(sess=sess)
 
+    brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
+    cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
     print(sess.run(l_out))
     print("    ")
     print(sess.run(ca_out))
     print("    ")
     print(sess.run(ba_out))
     print("    ")
-    cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
-    brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
     print(brt_val)
     print("    ")
     print(bp_val)
