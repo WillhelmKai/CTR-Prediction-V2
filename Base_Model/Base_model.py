@@ -63,60 +63,76 @@ l_out = features['label']
 # ————————————————————————————
 #Embedding Layer start
 # ————————————————————————————
-ph_behavior_categories = tf.placeholder(tf.float32, [738])
-ph_behavior_brand = tf.placeholder(tf.float32, [738])
-ph_behavior_review_time = tf.placeholder(tf.float32, [1])
-ph_behavior_price = tf.placeholder(tf.float32, [1])
+ph_behavior_categories = tf.placeholder(tf.float32, [None,738])
+ph_behavior_brand = tf.placeholder(tf.float32, [None,3526])
+ph_behavior_review_time = tf.placeholder(tf.float32, [None,1])
+ph_behavior_price = tf.placeholder(tf.float32, [None,1])
 
-W_bc=weight_variable([738, 500])
+W_bc=weight_variable([738, 500]) #out [-1, 500]
 b_bc=bias_variable([500])
-embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_categories, W_bc)+b_bc)
+embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_categories, W_bc)+b_bc) 
 
-W_bb=weight_variable([3526, 500])
+W_bb=weight_variable([3526, 500]) #out [-1, 500]
 b_bb=bias_variable([500])
-embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_brand, W_bb)+b_bb)
+embeded_bb = tf.nn.tanh(tf.matmul(ph_behavior_brand, W_bb)+b_bb)
 
-W_brt=weight_variable([1, 50])
+W_brt=weight_variable([1, 50]) #out [-1, 50]
 b_brt=bias_variable([50])
-embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt)
+embeded_brt = tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt)
 
-W_bp=weight_variable([1, 50])
+W_bp=weight_variable([1, 50]) #out [-1, 50]
 b_bp=bias_variable([50])
-embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
+embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
 
-embeding_out = tf.concat([embeded_bc,embeded_bc,embeded_bc,embeded_bc], 1)
+embedding_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
+embedding_out = tf.reshape(embedding_out,[-1,1100,1])
 # ————————————————————————————
 #Embedding Layer end
 # ————————————————————————————
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    tf.train.start_queue_runners(sess=sess)
-
-    brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
-    cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
-
-    bc_val = tf.reshape(bc_val, [-1, cc_val.shape[1]])
-    bb_val = tf.reshape(bb_val, [-1, cb_val.shape[1]])
-    brt_val = tf.reshape(brt_val, [-1,1])
-    bp_val = tf.reshape(bp_val, [-1,1])
-
-
-    # for i in range(0,bc_val[0]):
-    #      pass 
-    print(sess.run(embeding_out, feed_dict={ph_behavior_categories:tf.reshape(bc_val[0],[1,-1]), 
-    ph_behavior_brand:tf.reshape(bb_val[0],[1,-1]), 
-    ph_behavior_review_time:tf.reshape(brt_val[0],[1,-1]),
-    ph_behavior_price:tf.reshape(bp_val[0],[1,-1])
-        }))
-
-
 # ————————————————————————————
 #interest extractor layer start
 # ————————————————————————————
+cell = tf.nn.rnn_cell.GRUCell(num_units = 1100)
+init_state = cell.zero_state(batch_size=1100,dtype = tf.float32)
+outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_out, initial_state=init_state, time_major=True)
+#output [-1, 1100,1100]
+
+#down size the output to [-1, 1100] can be multiplied by 
+        # ————————————————————————————
+        #Auxiliary Loss start
+        # ————————————————————————————
+        #target before sigmoid [-1, 1]
+        # ————————————————————————————
+        #Auxiliary Loss end
+        # ————————————————————————————
 
 # ————————————————————————————
 #interest extractor layer end
 # ————————————————————————————
+with tf.Session() as sess:
+    coord = tf.train.Coordinator()
+    sess.run(tf.global_variables_initializer())
+    threats = tf.train.start_queue_runners(sess=sess, coord = coord)
+
+#retrive data
+    brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
+    cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
+
+#reformate as the time series behavior 
+    bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
+    bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
+    brt_val = np.array(brt_val).reshape((-1, 1))
+    bp_val = np.array(bp_val).reshape((-1, 1))
+
+    out = sess.run(outputs, feed_dict=
+    {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+    ph_behavior_review_time:brt_val,ph_behavior_price:bp_val})
+    print(bp_val.shape)
+    print("   ")
+    print(out.shape)
+
+    coord.request_stop()
+    coord.join(threats)
 
 # ————————————————————————————
 #interest evolving layer start
@@ -138,8 +154,6 @@ with tf.Session() as sess:
 #input
 # ————————————————————————————
 
-# dr_train = dr[:int(len(dr)*0.7)]
-# dr_test = dr[int(len(dr)*0.7):]
 
 # ————————————————————————————
 #training start
