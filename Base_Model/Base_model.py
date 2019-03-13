@@ -7,11 +7,21 @@ import numpy as np
 import os
 #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
+def weight_variable(shape):
+    initial = tf.contrib.layers.xavier_initializer()
+    return tf.Variable(initial(shape))
+
+def bias_variable(shape):
+    initial = tf.contrib.layers.xavier_initializer()
+    return tf.Variable(initial(shape))
+
 filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 # filename = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 
 # ———————————————————————————— 
-#record strcuture: ID192403  review1689188 with total 192403 records
+#total 192403 records
+#categories (1,738), brand (1,3526)
+#record strcuture: ID192403  review1689188 with 
 #[behavior[multi-dimension, numpy array stored data Frame](asin, brand, categories, unixReviewTime, price, overall),
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
@@ -19,6 +29,10 @@ epoch = 1
 filename_queue = tf.train.string_input_producer([filename], num_epochs=None)
 reader = tf.TFRecordReader()
 _, serialized_example = reader.read(filename_queue)
+
+# ————————————————————————————
+#read and decode
+# ————————————————————————————
 features = tf.parse_single_example(serialized_example,
         features={
             'behavior_asin': tf.FixedLenFeature([], tf.string),
@@ -46,48 +60,54 @@ ba_out = features['behavior_asin']
 ca_out = features['candidate_asin']
 l_out = features['label']
 
+# ————————————————————————————
+#Embedding Layer start
+# ————————————————————————————
+ph_behavior_categories = tf.placeholder(tf.float32, [738])
+ph_behavior_brand = tf.placeholder(tf.float32, [738])
+ph_behavior_review_time = tf.placeholder(tf.float32, [1])
+ph_behavior_price = tf.placeholder(tf.float32, [1])
+
+W_bc=weight_variable([738, 500])
+b_bc=bias_variable([500])
+embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_categories, W_bc)+b_bc)
+
+W_bb=weight_variable([3526, 500])
+b_bb=bias_variable([500])
+embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_brand, W_bb)+b_bb)
+
+W_brt=weight_variable([1, 50])
+b_brt=bias_variable([50])
+embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt)
+
+W_bp=weight_variable([1, 50])
+b_bp=bias_variable([50])
+embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
+
+embeding_out = tf.concat([embeded_bc,embeded_bc,embeded_bc,embeded_bc], 1)
+# ————————————————————————————
+#Embedding Layer end
+# ————————————————————————————
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     tf.train.start_queue_runners(sess=sess)
 
     brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
     cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
-    print(sess.run(l_out))
-    print("    ")
-    print(sess.run(ca_out))
-    print("    ")
-    print(sess.run(ba_out))
-    print("    ")
-    print(brt_val)
-    print("    ")
-    print(bp_val)
-    print("    ")
-    print(bb_val)
-    print("    ")
-    print(bc_val)
-    print("    ")
-    print(cc_val)
-    print("    ")
-    print(cb_val)
-    print("    ")
-    print(cp_val)
-    print("    ")
-    print(l_val)
+
+    bc_val = tf.reshape(bc_val, [-1, cc_val.shape[1]])
+    bb_val = tf.reshape(bb_val, [-1, cb_val.shape[1]])
+    brt_val = tf.reshape(brt_val, [-1,1])
+    bp_val = tf.reshape(bp_val, [-1,1])
 
 
-# ————————————————————————————
-#Embedding Layer start
-# ————————————————————————————
-# categories_input = tf.placeholder(tf.float32, [None, 100])
-# brand_input = tf.placeholder(tf.float32, [None, 100])
-# price_input = tf.placeholder(tf.float32, [None, 100])
-# review_time_input = tf.placeholder(tf.float32, [None, 100])
-
-# ————————————————————————————
-#Embedding Layer end
-# ————————————————————————————
-
-
+    # for i in range(0,bc_val[0]):
+    #      pass 
+    print(sess.run(embeding_out, feed_dict={ph_behavior_categories:tf.reshape(bc_val[0],[1,-1]), 
+    ph_behavior_brand:tf.reshape(bb_val[0],[1,-1]), 
+    ph_behavior_review_time:tf.reshape(brt_val[0],[1,-1]),
+    ph_behavior_price:tf.reshape(bp_val[0],[1,-1])
+        }))
 
 
 # ————————————————————————————
