@@ -84,8 +84,8 @@ W_bp=weight_variable([1, 50]) #out [-1, 50]
 b_bp=bias_variable([50])
 embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
 
-embedding_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
-embedding_out = tf.reshape(embedding_out,[-1,1100,1])
+embedding_behavior_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
+embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
 # ————————————————————————————
 #Embedding Layer end
 # ————————————————————————————
@@ -94,10 +94,11 @@ embedding_out = tf.reshape(embedding_out,[-1,1100,1])
 # ————————————————————————————
 cell = tf.nn.rnn_cell.GRUCell(num_units = 1100)
 init_state = cell.zero_state(batch_size=1100,dtype = tf.float32)
-outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_out, initial_state=init_state, time_major=True)
+outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
 #output [-1, 1100,1100]
 
-#down size the output to [-1, 1100] can be multiplied by 
+    #[1100, -1] 
+#down size  can be multiplied(one by one)by input [-1,1100] * [1100,-1]the output to ????
         # ————————————————————————————
         #Auxiliary Loss start
         # ————————————————————————————
@@ -109,6 +110,35 @@ outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_out, initial_state=init
 # ————————————————————————————
 #interest extractor layer end
 # ————————————————————————————
+# ————————————————————————————
+#interest evolving layer start
+# ————————————————————————————
+#embedding candidate features
+ph_candidate_categories = tf.placeholder(tf.float32, [None,738])
+ph_candidate_brand = tf.placeholder(tf.float32, [None,3526])
+ph_candidate_price = tf.placeholder(tf.float32, [None,1])
+
+W_cc=weight_variable([738, 500]) #out [-1, 500]
+b_cc=bias_variable([500])
+embeded_cc = tf.nn.tanh(tf.matmul(ph_candidate_categories, W_cc)+b_cc) 
+
+W_cb=weight_variable([3526, 500]) #out [-1, 500]
+b_cb=bias_variable([500])
+embeded_cb = tf.nn.tanh(tf.matmul(ph_candidate_brand, W_cb)+b_cb)
+
+W_cp=weight_variable([1, 50]) #out [-1, 50]
+b_cp=bias_variable([50])
+embeded_cp = tf.nn.tanh(tf.matmul(ph_candidate_price, W_cp)+b_cp)
+
+embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp], 1)#out [-1, 1050] intened to be [-1,1100]
+
+#attention machanism
+
+# ————————————————————————————
+#interest evolving layer end
+# ————————————————————————————
+
+
 with tf.Session() as sess:
     coord = tf.train.Coordinator()
     sess.run(tf.global_variables_initializer())
@@ -124,23 +154,21 @@ with tf.Session() as sess:
     brt_val = np.array(brt_val).reshape((-1, 1))
     bp_val = np.array(bp_val).reshape((-1, 1))
 
-    out = sess.run(outputs, feed_dict=
-    {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-    ph_behavior_review_time:brt_val,ph_behavior_price:bp_val})
-    print(bp_val.shape)
+    # out = sess.run(outputs, feed_dict=
+    # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+    # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val})
+
+    out = sess.run(embedding_candidate_out, feed_dict=
+    {ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+    ph_candidate_price:cp_val})
+
+    print(out)
     print("   ")
     print(out.shape)
 
     coord.request_stop()
     coord.join(threats)
 
-# ————————————————————————————
-#interest evolving layer start
-# ————————————————————————————
-
-# ————————————————————————————
-#interest evolving layer end
-# ————————————————————————————
 
 # ————————————————————————————
 #NN start
@@ -150,16 +178,7 @@ with tf.Session() as sess:
 #NN end
 # ————————————————————————————
 
-# ————————————————————————————
-#input
-# ————————————————————————————
-
-
-# ————————————————————————————
-#training start
-# ————————————————————————————
 
 # ————————————————————————————
 #Evaluation start
 # ————————————————————————————
-
