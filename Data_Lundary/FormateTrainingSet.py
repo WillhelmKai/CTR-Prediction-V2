@@ -40,11 +40,9 @@ def _bytes_feature(value):
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
 #destination
-# traning_set_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.json'
 # tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecord'
 # text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
-# traning_set_add = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.json'
 tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
 
