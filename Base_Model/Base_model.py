@@ -179,10 +179,6 @@ with tf.Session() as sess:
     ph_candidate_price:cp_val
     })
 
-    # out = sess.run(embedding_candidate_out, feed_dict=
-    # {ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-    # ph_candidate_price:cp_val})
-
     print(out)
     print("   ")
     print(out.shape)
