@@ -93,7 +93,7 @@ embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
 #interest extractor layer start
 # ————————————————————————————
 cell = tf.nn.rnn_cell.GRUCell(num_units = 1100)
-init_state = cell.zero_state(batch_size=1100,dtype = tf.float32)
+init_state = cell.zero_state(batch_size=1100,dtype = tf.float32) #batch size intented to be, out can be [-1, 1100] multiply oneby one
 outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
 #output [-1, 1100,1100]
 
@@ -134,6 +134,9 @@ embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp], 1)#out [
 
 #attention machanism
 
+
+
+#second GRU
 # ————————————————————————————
 #interest evolving layer end
 # ————————————————————————————
