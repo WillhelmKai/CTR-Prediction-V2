@@ -26,6 +26,7 @@ filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\Tra
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
 epoch = 1
+iteration = 192403
 filename_queue = tf.train.string_input_producer([filename], num_epochs=None)
 reader = tf.TFRecordReader()
 _, serialized_example = reader.read(filename_queue)
@@ -145,12 +146,31 @@ attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf
 second_GRU_input = tf.reshape(tf.matmul(attention_output, embedding_candidate_out), [-1,1050,1]) #[deepth, 1100]
 init_state_second = cell.zero_state(batch_size=1050,dtype = tf.float32) 
 second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_input, initial_state=init_state_second, time_major=True)
+#out size [length, 1050, 1]
 # ————————————————————————————
 #interest evolving layer end
 # ————————————————————————————
 # ————————————————————————————
 #NN start
 # ————————————————————————————
+#flaten out put
+W_NN_input = weight_variable([1050, 1])
+b_NN_input = bias_variable([1])
+NN_input_per= tf.nn.tanh(tf.matmul(tf.transpose(tf.reshape(second_GRU_outputs,[-1, 1050])), tf.reshape(second_GRU_outputs,[-1, 1050]))+b_NN_input)
+NN_input = tf.concat([tf.transpose(tf.nn.tanh(tf.matmul(NN_input_per, W_NN_input)+b_NN_input))
+    ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
+
+W_fc_1 = weight_variable([5315, 200])
+b_fc_1 = bias_variable([200])
+h_fc_1 = tf.nn.tanh(tf.matmul(NN_input, W_fc_1)+b_fc_1)
+
+W_fc_2 = weight_variable([200, 80])
+b_fc_2 = bias_variable([80])
+h_fc_2 = tf.nn.tanh(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
+
+W_fc_3 = weight_variable([80, 2])
+b_fc_3 = bias_variable([2])
+final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 
 # ————————————————————————————
 #NN end
@@ -171,18 +191,22 @@ with tf.Session() as sess:
     bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
     brt_val = np.array(brt_val).reshape((-1, 1))
     bp_val = np.array(bp_val).reshape((-1, 1))
+    for i in range(epoch):
+        print("Epoch No. "+str(i+1)+" started "+"\n")
+        for j in range(iteration):
+            out = sess.run(final_result, feed_dict=
+            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            ph_candidate_price:cp_val
+            })
 
-    out = sess.run(second_GRU_outputs, feed_dict=
-    {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-    ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-    ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-    ph_candidate_price:cp_val
-    })
-
-    print(out)
-    print("   ")
-    print(out.shape)
-
+            print(out)
+            print("   ")
+            print(out.shape)
+            if (((i*iteration)+j)%500):
+                pass
+    print("Training finished")
     coord.request_stop()
     coord.join(threats)
 
