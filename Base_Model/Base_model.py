@@ -92,10 +92,14 @@ embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
 # ————————————————————————————
 #interest extractor layer start
 # ————————————————————————————
-cell = tf.nn.rnn_cell.GRUCell(num_units = 1100)
+cell = tf.nn.rnn_cell.GRUCell(num_units = 1)
 init_state = cell.zero_state(batch_size=1100,dtype = tf.float32) #batch size intented to be, out can be [-1, 1100] multiply oneby one
-outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
+first_GRU_outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
 #output [-1, 1100,1100]
+
+W_temp=weight_variable([1100, 1050]) #out [-1, 50]
+b_temp=bias_variable([1050])
+first_GRU_outputs = tf.nn.tanh(tf.matmul(tf.reshape(first_GRU_outputs, [-1,1100]), W_temp)+b_temp)
 
     #[1100, -1] 
 #down size  can be multiplied(one by one)by input [-1,1100] * [1100,-1]the output to ????
@@ -133,12 +137,23 @@ embeded_cp = tf.nn.tanh(tf.matmul(ph_candidate_price, W_cp)+b_cp)
 embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp], 1)#out [-1, 1050] intened to be [-1,1100]
 
 #attention machanism
-
-
+W_attention = weight_variable([1050,1050])
+attention_intermidiate_output = tf.matmul(first_GRU_outputs, tf.matmul(W_attention, tf.transpose(embedding_candidate_out)))
+attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf.exp(attention_intermidiate_output)))
 
 #second GRU
+second_GRU_input = tf.reshape(tf.matmul(attention_output, embedding_candidate_out), [-1,1050,1]) #[deepth, 1100]
+init_state_second = cell.zero_state(batch_size=1050,dtype = tf.float32) 
+second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_input, initial_state=init_state_second, time_major=True)
 # ————————————————————————————
 #interest evolving layer end
+# ————————————————————————————
+# ————————————————————————————
+#NN start
+# ————————————————————————————
+
+# ————————————————————————————
+#NN end
 # ————————————————————————————
 
 
@@ -157,13 +172,16 @@ with tf.Session() as sess:
     brt_val = np.array(brt_val).reshape((-1, 1))
     bp_val = np.array(bp_val).reshape((-1, 1))
 
-    # out = sess.run(outputs, feed_dict=
-    # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-    # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val})
+    out = sess.run(second_GRU_outputs, feed_dict=
+    {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+    ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+    ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+    ph_candidate_price:cp_val
+    })
 
-    out = sess.run(embedding_candidate_out, feed_dict=
-    {ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-    ph_candidate_price:cp_val})
+    # out = sess.run(embedding_candidate_out, feed_dict=
+    # {ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+    # ph_candidate_price:cp_val})
 
     print(out)
     print("   ")
@@ -173,13 +191,6 @@ with tf.Session() as sess:
     coord.join(threats)
 
 
-# ————————————————————————————
-#NN start
-# ————————————————————————————
-
-# ————————————————————————————
-#NN end
-# ————————————————————————————
 
 
 # ————————————————————————————
