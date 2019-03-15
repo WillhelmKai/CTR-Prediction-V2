@@ -49,6 +49,7 @@ features = tf.parse_single_example(serialized_example,
             'candidate_categories':tf.FixedLenFeature([], tf.string),
             'candidate_brand':tf.FixedLenFeature([], tf.string),
             'candidate_price':tf.FixedLenFeature([], tf.string),
+            'candidate_review_time':tf.FixedLenFeature([1], tf.float32),
             'label': tf.FixedLenFeature([2], tf.float32)
         })
 features = tf.train.shuffle_batch(features, batch_size=1, capacity=10, min_after_dequeue=5, num_threads=1)
@@ -60,11 +61,11 @@ brt_out = tf.cast(tf.decode_raw(features['behavior_review_time'], tf.uint8), tf.
 cc_out = tf.cast(tf.decode_raw(features['candidate_categories'], tf.uint8), tf.float32)
 cb_out = tf.cast(tf.decode_raw(features['candidate_brand'], tf.uint8), tf.float32)
 cp_out = tf.cast(tf.decode_raw(features['candidate_price'], tf.uint8), tf.float32)
-# l_out = tf.cast(tf.decode_raw(features['label'], tf.uint8), tf.float32)
 
 
 ba_out = features['behavior_asin']
 ca_out = features['candidate_asin']
+crt_out = features['candidate_review_time']
 l_out = features['label']
 
 # ————————————————————————————
@@ -189,10 +190,10 @@ with tf.Session() as sess:
     threats = tf.train.start_queue_runners(sess=sess, coord = coord)
 
 #retrive data
-    brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
-    cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
+    brt_val,bp_val,bb_val,bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
+    cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
 
-    print(l_val)
+    print(crt_val)
 
 #reformate as the time series behavior 
     # bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
