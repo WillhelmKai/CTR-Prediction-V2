@@ -50,7 +50,7 @@ data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
 # ————————————————————————————
 # ————————————————————————————
-df = df[0:int(len(df)*0.01)]
+# df = df[0:int(len(df)*0.01)]
 # ————————————————————————————
 # ————————————————————————————
 # creat empty list with the length of df 
