@@ -193,8 +193,6 @@ with tf.Session() as sess:
     brt_val,bp_val,bb_val,bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
     cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
 
-    print(crt_val)
-
 #reformate as the time series behavior 
     # bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
     # bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
