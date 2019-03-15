@@ -40,17 +40,17 @@ def _bytes_feature(value):
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
 #destination
-# tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecord'
-# text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
+tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSetTest.tfrecords'
+text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
-tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
+# tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+# text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
 
 data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
 # ————————————————————————————
 # ————————————————————————————
-# df = df[0:int(len(df)*0.01)]
+df = df[0:int(len(df)*0.01)]
 # ————————————————————————————
 # ————————————————————————————
 # creat empty list with the length of df 
@@ -106,7 +106,8 @@ for reviewerID in reviewID_dic.itertuples(index = False):
                 candidate_true_categories = his_behavior.loc[i]['categories'] #candidate ad
                 candidate_true_brand = his_behavior.loc[i]['brand']
                 candidate_true_price = his_behavior.loc[i]['price']
-                true_label = 1.0
+                candidate_review_time = his_behavior.loc[i]['unixReviewTime']
+                true_label = [1.0, 0.0]
 
                 # print(str(behavior_asin))
                 # break
@@ -120,7 +121,8 @@ for reviewerID in reviewID_dic.itertuples(index = False):
                 'candidate_categories':_bytes_feature(toBytes(candidate_true_categories)),
                 'candidate_brand':_bytes_feature(toBytes(candidate_true_brand)),
                 'candidate_price':_bytes_feature(toBytes(candidate_true_price)),
-                'label':tf.train.Feature(float_list = tf.train.FloatList(value=[true_label]))
+                'candidate_review_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_review_time])),
+                'label':tf.train.Feature(float_list = tf.train.FloatList(value=true_label))
                 }))
 
                 serialized = example.SerializeToString()
@@ -132,7 +134,8 @@ for reviewerID in reviewID_dic.itertuples(index = False):
                 candidate_true_categories = candidate_false['categories'] #candidate ad
                 candidate_true_brand = candidate_false['brand']
                 candidate_true_price = candidate_false['price']
-                false_label = 0.0
+                candidate_review_time = candidate_false['unixReviewTime']
+                false_label = [0.0, 1.0]
 
                 example = tf.train.Example(features = tf.train.Features(feature = {
                 'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(str(behavior_asin), encoding = "utf8")])),
@@ -144,7 +147,8 @@ for reviewerID in reviewID_dic.itertuples(index = False):
                 'candidate_categories':_bytes_feature(toBytes(candidate_true_categories)),
                 'candidate_brand':_bytes_feature(toBytes(candidate_true_brand)),
                 'candidate_price':_bytes_feature(toBytes(candidate_true_price)),
-                'label':tf.train.Feature(float_list = tf.train.FloatList(value=[false_label]))
+                'candidate_review_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_review_time])),
+                'label':tf.train.Feature(float_list = tf.train.FloatList(value=false_label))
                 }))
 
                 serialized = example.SerializeToString()
