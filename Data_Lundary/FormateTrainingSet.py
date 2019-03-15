@@ -40,11 +40,11 @@ def _bytes_feature(value):
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
 #destination
-tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSetTest.tfrecords'
-text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
+# tfrecord = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSetTest.tfrecords'
+# text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
-# tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-# text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
+tfrecord = '/home/ubuntu/fyp2/LundaryBack/TrainingSetTest.tfrecords'
+text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
 
 data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
