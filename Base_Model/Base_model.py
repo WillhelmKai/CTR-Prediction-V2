@@ -15,7 +15,11 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
-filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSetTest.tfrecords'
+
+
+# filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+
 # filename = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 
 # ———————————————————————————— 
@@ -45,9 +49,9 @@ features = tf.parse_single_example(serialized_example,
             'candidate_categories':tf.FixedLenFeature([], tf.string),
             'candidate_brand':tf.FixedLenFeature([], tf.string),
             'candidate_price':tf.FixedLenFeature([], tf.string),
-            'label': tf.FixedLenFeature([], tf.float32)
+            'label': tf.FixedLenFeature([2], tf.float32)
         })
-features = tf.train.shuffle_batch(features, batch_size=1, capacity=20, min_after_dequeue=10, num_threads=1)
+features = tf.train.shuffle_batch(features, batch_size=1, capacity=10, min_after_dequeue=5, num_threads=1)
 
 bc_out = tf.cast(tf.decode_raw(features['behavior_categories'], tf.uint8), tf.float32)
 bb_out = tf.cast(tf.decode_raw(features['behavior_brand'], tf.uint8), tf.float32)
@@ -56,6 +60,8 @@ brt_out = tf.cast(tf.decode_raw(features['behavior_review_time'], tf.uint8), tf.
 cc_out = tf.cast(tf.decode_raw(features['candidate_categories'], tf.uint8), tf.float32)
 cb_out = tf.cast(tf.decode_raw(features['candidate_brand'], tf.uint8), tf.float32)
 cp_out = tf.cast(tf.decode_raw(features['candidate_price'], tf.uint8), tf.float32)
+# l_out = tf.cast(tf.decode_raw(features['label'], tf.uint8), tf.float32)
+
 
 ba_out = features['behavior_asin']
 ca_out = features['candidate_asin']
@@ -186,26 +192,28 @@ with tf.Session() as sess:
     brt_val,bp_val,bb_val, bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
     cc_val,cb_val,cp_val, l_val= sess.run([cc_out,cb_out,cp_out,l_out])
 
-#reformate as the time series behavior 
-    bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
-    bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
-    brt_val = np.array(brt_val).reshape((-1, 1))
-    bp_val = np.array(bp_val).reshape((-1, 1))
-    for i in range(epoch):
-        print("Epoch No. "+str(i+1)+" started "+"\n")
-        for j in range(iteration):
-            out = sess.run(final_result, feed_dict=
-            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            ph_candidate_price:cp_val
-            })
+    print(l_val)
 
-            print(out)
-            print("   ")
-            print(out.shape)
-            if (((i*iteration)+j)%500):
-                pass
+#reformate as the time series behavior 
+    # bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
+    # bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
+    # brt_val = np.array(brt_val).reshape((-1, 1))
+    # bp_val = np.array(bp_val).reshape((-1, 1))
+    # for i in range(epoch):
+    #     print("Epoch No. "+str(i+1)+" started "+"\n")
+    #     for j in range(iteration):
+    #         out = sess.run(final_result, feed_dict=
+    #         {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+    #         ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+    #         ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+    #         ph_candidate_price:cp_val
+    #         })
+
+    #         print(out)
+    #         print("   ")
+    #         print(out.shape)
+    #         if (((i*iteration)+j)%500):
+    #             pass
     print("Training finished")
     coord.request_stop()
     coord.join(threats)
