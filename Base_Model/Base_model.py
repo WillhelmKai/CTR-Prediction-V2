@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import os
 #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
 def weight_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
