@@ -17,7 +17,6 @@ def bias_variable(shape):
 
 filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSetTest.tfrecords'
 
-
 # filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 
 # filename = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
@@ -102,15 +101,15 @@ embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
 # ————————————————————————————
 cell = tf.nn.rnn_cell.GRUCell(num_units = 1)
 init_state = cell.zero_state(batch_size=1100,dtype = tf.float32) #batch size intented to be, out can be [-1, 1100] multiply oneby one
-first_GRU_outputs, final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
+first_GRU_outputs, first_final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
 #output [-1, 1100,1100]
 
-W_temp=weight_variable([1100, 1050]) #out [-1, 50]
-b_temp=bias_variable([1050])
-first_GRU_outputs = tf.nn.tanh(tf.matmul(tf.reshape(first_GRU_outputs, [-1,1100]), W_temp)+b_temp)
+first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
 
-    #[1100, -1] 
-#down size  can be multiplied(one by one)by input [-1,1100] * [1100,-1]the output to ????
+# W_temp=weight_variable([1100, 1100]) #out [-1, 50]
+# b_temp=bias_variable([1100])
+# first_GRU_outputs = tf.nn.tanh(tf.matmul(tf.reshape(first_GRU_outputs, [-1,1100]), W_temp)+b_temp)
+
         # ————————————————————————————
         #Auxiliary Loss start
         # ————————————————————————————
@@ -129,6 +128,7 @@ first_GRU_outputs = tf.nn.tanh(tf.matmul(tf.reshape(first_GRU_outputs, [-1,1100]
 ph_candidate_categories = tf.placeholder(tf.float32, [None,738])
 ph_candidate_brand = tf.placeholder(tf.float32, [None,3526])
 ph_candidate_price = tf.placeholder(tf.float32, [None,1])
+ph_candidate_review_time = tf.placeholder(tf.float32, [None,1])
 
 W_cc=weight_variable([738, 500]) #out [-1, 500]
 b_cc=bias_variable([500])
@@ -142,18 +142,22 @@ W_cp=weight_variable([1, 50]) #out [-1, 50]
 b_cp=bias_variable([50])
 embeded_cp = tf.nn.tanh(tf.matmul(ph_candidate_price, W_cp)+b_cp)
 
-embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp], 1)#out [-1, 1050] intened to be [-1,1100]
+W_crt=weight_variable([1, 50]) #out [-1, 50]
+b_crt=bias_variable([50])
+embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
+
+embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out [-1, 1050] intened to be [-1,1100]
 
 #attention machanism
-W_attention = weight_variable([1050,1050])
+W_attention = weight_variable([1100,1100])
 attention_intermidiate_output = tf.matmul(first_GRU_outputs, tf.matmul(W_attention, tf.transpose(embedding_candidate_out)))
 attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf.exp(attention_intermidiate_output)))
 
 #second GRU
-second_GRU_input = tf.reshape(tf.matmul(attention_output, embedding_candidate_out), [-1,1050,1]) #[deepth, 1100]
-init_state_second = cell.zero_state(batch_size=1050,dtype = tf.float32) 
+second_GRU_input = tf.reshape(tf.matmul(attention_output, embedding_candidate_out), [-1,1100,1]) #[deepth, 1100]
+init_state_second = cell.zero_state(batch_size=1100,dtype = tf.float32) 
 second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_input, initial_state=init_state_second, time_major=True)
-#out size [length, 1050, 1]
+#out size [length, 1100, 1]
 # ————————————————————————————
 #interest evolving layer end
 # ————————————————————————————
@@ -161,13 +165,13 @@ second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_inpu
 #NN start
 # ————————————————————————————
 #flaten out put
-W_NN_input = weight_variable([1050, 1])
+W_NN_input = weight_variable([1100, 1])
 b_NN_input = bias_variable([1])
-NN_input_per= tf.nn.tanh(tf.matmul(tf.transpose(tf.reshape(second_GRU_outputs,[-1, 1050])), tf.reshape(second_GRU_outputs,[-1, 1050]))+b_NN_input)
+NN_input_per= tf.nn.tanh(tf.matmul(tf.transpose(tf.reshape(second_GRU_outputs,[-1, 1100])), tf.reshape(second_GRU_outputs,[-1, 1100]))+b_NN_input)
 NN_input = tf.concat([tf.transpose(tf.nn.tanh(tf.matmul(NN_input_per, W_NN_input)+b_NN_input))
     ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
 
-W_fc_1 = weight_variable([5315, 200])
+W_fc_1 = weight_variable([5365, 200])
 b_fc_1 = bias_variable([200])
 h_fc_1 = tf.nn.tanh(tf.matmul(NN_input, W_fc_1)+b_fc_1)
 
@@ -193,26 +197,46 @@ with tf.Session() as sess:
     brt_val,bp_val,bb_val,bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
     cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
 
-#reformate as the time series behavior 
+
     bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
     bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
     brt_val = np.array(brt_val).reshape((-1, 1))
     bp_val = np.array(bp_val).reshape((-1, 1))
-    for i in range(epoch):
-        print("Epoch No. "+str(i+1)+" started "+"\n")
-        for j in range(iteration):
-            out = sess.run(final_result, feed_dict=
-            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            ph_candidate_price:cp_val
-            })
 
-            print(out)
-            print("   ")
-            print(out.shape)
-            if (((i*iteration)+j)%500):
-                pass
+
+    out = sess.run(first_final_state, feed_dict=
+    {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+    ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+    ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+    ph_candidate_review_time:crt_val,
+    ph_candidate_price:cp_val
+    })
+
+    print(out)
+    print(out.shape)
+
+# reformate as the time series behavior 
+
+
+    # bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
+    # bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
+    # brt_val = np.array(brt_val).reshape((-1, 1))
+    # bp_val = np.array(bp_val).reshape((-1, 1))
+    # for i in range(epoch):
+    #     print("Epoch No. "+str(i+1)+" started "+"\n")
+    #     for j in range(iteration):
+    #         out = sess.run(NN_input, feed_dict=
+    #         {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+    #         ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+    #         ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+    #         ph_candidate_review_time:crt_val,ph_candidate_price:cp_val
+    #         })
+
+    #         print(out)
+    #         print("   ")
+    #         print(out.shape)
+    #         if (((i*iteration)+j)%500):
+    #             pass
     print("Training finished")
     coord.request_stop()
     coord.join(threats)
