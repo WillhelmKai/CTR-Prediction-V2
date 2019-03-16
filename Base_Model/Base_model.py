@@ -132,8 +132,6 @@ first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
 #interest evolving layer start
 # ————————————————————————————
 #embedding candidate features
-
-
 W_cc=weight_variable([738, 500]) #out [-1, 500]
 b_cc=bias_variable([500])
 embeded_cc = tf.nn.tanh(tf.matmul(ph_candidate_categories, W_cc)+b_cc) 
