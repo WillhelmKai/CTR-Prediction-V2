@@ -75,6 +75,13 @@ ph_behavior_brand = tf.placeholder(tf.float32, [None,3526])
 ph_behavior_review_time = tf.placeholder(tf.float32, [None,1])
 ph_behavior_price = tf.placeholder(tf.float32, [None,1])
 
+ph_candidate_categories = tf.placeholder(tf.float32, [None,738])
+ph_candidate_brand = tf.placeholder(tf.float32, [None,3526])
+ph_candidate_price = tf.placeholder(tf.float32, [None,1])
+ph_candidate_review_time = tf.placeholder(tf.float32, [None,1])
+
+ph_label = tf.placeholder(tf.float32, [None,2])
+
 W_bc=weight_variable([738, 500]) #out [-1, 500]
 b_bc=bias_variable([500])
 embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_categories, W_bc)+b_bc) 
@@ -125,10 +132,7 @@ first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
 #interest evolving layer start
 # ————————————————————————————
 #embedding candidate features
-ph_candidate_categories = tf.placeholder(tf.float32, [None,738])
-ph_candidate_brand = tf.placeholder(tf.float32, [None,3526])
-ph_candidate_price = tf.placeholder(tf.float32, [None,1])
-ph_candidate_review_time = tf.placeholder(tf.float32, [None,1])
+
 
 W_cc=weight_variable([738, 500]) #out [-1, 500]
 b_cc=bias_variable([500])
@@ -183,67 +187,64 @@ W_fc_3 = weight_variable([80, 2])
 b_fc_3 = bias_variable([2])
 final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 
+loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
+
+precision=tf.metrics.precision(ph_label, final_result)
+accuracy =tf.metrics.accuracy(ph_label, final_result)
+AUC = tf.metrics.auc(ph_label, final_result)
+
+train_step = tf.train.AdamOptimizer(1e-6).minimize(loss)
 # ————————————————————————————
 #NN end
 # ————————————————————————————
-
-
 with tf.Session() as sess:
+    precision_global = 0
+    accuracy_global = 0
+    AUC_global = 0
+    
     coord = tf.train.Coordinator()
     sess.run(tf.global_variables_initializer())
+    sess.run(tf.local_variables_initializer())
     threats = tf.train.start_queue_runners(sess=sess, coord = coord)
 
 #retrive data
     brt_val,bp_val,bb_val,bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
     cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
-
-
+# reformate as the time series behavior 
     bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
     bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
     brt_val = np.array(brt_val).reshape((-1, 1))
     bp_val = np.array(bp_val).reshape((-1, 1))
+    for i in range(epoch):
+        print("Epoch No. "+str(i+1)+" started "+"\n")
+        for j in range(iteration):
+            global_step = i*iteration+j
+            sess.run(train_step, feed_dict=
+            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+            ph_label:l_val})
 
+            loss_temp,precision_temp,accuracy_temp,AUC_temp= sess.run(
+            [loss,precision,accuracy,AUC], feed_dict=
+            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+            ph_label:l_val})
 
-    out = sess.run(first_final_state, feed_dict=
-    {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-    ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-    ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-    ph_candidate_review_time:crt_val,
-    ph_candidate_price:cp_val
-    })
-
-    print(out)
-    print(out.shape)
-
-# reformate as the time series behavior 
-
-
-    # bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
-    # bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
-    # brt_val = np.array(brt_val).reshape((-1, 1))
-    # bp_val = np.array(bp_val).reshape((-1, 1))
-    # for i in range(epoch):
-    #     print("Epoch No. "+str(i+1)+" started "+"\n")
-    #     for j in range(iteration):
-    #         out = sess.run(NN_input, feed_dict=
-    #         {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-    #         ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-    #         ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-    #         ph_candidate_review_time:crt_val,ph_candidate_price:cp_val
-    #         })
-
-    #         print(out)
-    #         print("   ")
-    #         print(out.shape)
-    #         if (((i*iteration)+j)%500):
-    #             pass
+            precision_global =precision_global+precision_temp[0]
+            accuracy_global =accuracy_global+accuracy_temp[0]
+            AUC_global = AUC_global+AUC_temp[0]
+            if (global_step%5000):
+                print("Step: "+str(global_step)+"  Loss: "+str(loss_temp)+
+                "  precision: "+str(precision_global/global_step)+
+                "  accuracy: "+str(accuracy_global/global_step)+
+                "  AUC: "+str(AUC_global/global_step))
     print("Training finished")
     coord.request_stop()
     coord.join(threats)
-
-
-
-
 # ————————————————————————————
 #Evaluation start
 # ————————————————————————————
