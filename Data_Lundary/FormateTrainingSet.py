@@ -45,8 +45,8 @@ def _bytes_feature(value):
 # tfrecord_test = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 # text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
-tfrecord_train = '/home/ubuntu/fyp2/LundaryBack/TrainingSetTest.tfrecords'
-tfrecord_test = '/home/ubuntu/fyp2/LundaryBack/TestSetTest.tfrecords'
+tfrecord_train = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+tfrecord_test = '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
 data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
