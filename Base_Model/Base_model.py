@@ -2,6 +2,7 @@
 #20190309
 import tensorflow as tf
 from tensorflow.contrib import slim
+from sklearn import metrics
 import pandas as pd
 import numpy as np
 import os
@@ -14,7 +15,8 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
-filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSetTest.tfrecords'
+training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 
 # filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 
@@ -27,14 +29,17 @@ filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\Tra
 #[behavior[multi-dimension, numpy array stored data Frame](asin, brand, categories, unixReviewTime, price, overall),
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
-epoch = 1
-iteration = 192403
-filename_queue = tf.train.string_input_producer([filename], num_epochs=None)
+#training set
+
+epoch = 0
+iteration = 307844
+iteration_test = 60000#60658
 reader = tf.TFRecordReader()
-_, serialized_example = reader.read(filename_queue)
+train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
+_, serialized_example = reader.read(train_queue)
 
 # ————————————————————————————
-#read and decode
+#read and decode training set
 # ————————————————————————————
 features = tf.parse_single_example(serialized_example,
         features={
@@ -65,7 +70,40 @@ ba_out = features['behavior_asin']
 ca_out = features['candidate_asin']
 crt_out = features['candidate_review_time']
 l_out = features['label']
+# ————————————————————————————
+#read and decode training set
+# ————————————————————————————
+test_queue = tf.train.string_input_producer([testing_set], num_epochs=None)
+_, serialized_example_test = reader.read(test_queue)
+features_test = tf.parse_single_example(serialized_example_test,
+        features={
+            'behavior_asin': tf.FixedLenFeature([], tf.string),
+            'behavior_categories': tf.FixedLenFeature([], tf.string),
+            'behavior_brand': tf.FixedLenFeature([], tf.string),
+            'behavior_price': tf.FixedLenFeature([], tf.string),
+            'behavior_review_time': tf.FixedLenFeature([], tf.string),
+            'candidate_asin': tf.FixedLenFeature([], tf.string),
+            'candidate_categories':tf.FixedLenFeature([], tf.string),
+            'candidate_brand':tf.FixedLenFeature([], tf.string),
+            'candidate_price':tf.FixedLenFeature([], tf.string),
+            'candidate_review_time':tf.FixedLenFeature([1], tf.float32),
+            'label': tf.FixedLenFeature([2], tf.float32)
+        })
+features_test = tf.train.shuffle_batch(features_test, batch_size=1, capacity=10, min_after_dequeue=5, num_threads=1)
 
+bc_t = tf.cast(tf.decode_raw(features_test['behavior_categories'], tf.uint8), tf.float32)
+bb_t = tf.cast(tf.decode_raw(features_test['behavior_brand'], tf.uint8), tf.float32)
+bp_t = tf.cast(tf.decode_raw(features_test['behavior_price'], tf.uint8), tf.float32)
+brt_t = tf.cast(tf.decode_raw(features_test['behavior_review_time'], tf.uint8), tf.float32)
+cc_t = tf.cast(tf.decode_raw(features_test['candidate_categories'], tf.uint8), tf.float32)
+cb_t = tf.cast(tf.decode_raw(features_test['candidate_brand'], tf.uint8), tf.float32)
+cp_t = tf.cast(tf.decode_raw(features_test['candidate_price'], tf.uint8), tf.float32)
+
+
+ba_t = features_test['behavior_asin']
+ca_t = features_test['candidate_asin']
+crt_t = features_test['candidate_review_time']
+l_t = features_test['label']
 # ————————————————————————————
 #Embedding Layer start
 # ————————————————————————————
@@ -186,19 +224,15 @@ final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
 
-precision=tf.metrics.precision(ph_label, final_result)
-accuracy =tf.metrics.accuracy(ph_label, final_result)
-AUC = tf.metrics.auc(ph_label, final_result)
+# precision=tf.metrics.precision(ph_label, final_result)
+# accuracy =tf.metrics.accuracy(ph_label, final_result)
+# AUC = tf.metrics.auc(ph_label, final_result)
 
 train_step = tf.train.AdamOptimizer(1e-6).minimize(loss)
 # ————————————————————————————
 #NN end
 # ————————————————————————————
 with tf.Session() as sess:
-    precision_global = 0
-    accuracy_global = 0
-    AUC_global = 0
-    
     coord = tf.train.Coordinator()
     sess.run(tf.global_variables_initializer())
     sess.run(tf.local_variables_initializer())
@@ -231,17 +265,49 @@ with tf.Session() as sess:
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
             ph_label:l_val})
 
-            precision_global =precision_global+precision_temp[0]
-            accuracy_global =accuracy_global+accuracy_temp[0]
-            AUC_global = AUC_global+AUC_temp[0]
+            # precision_global =precision_global+precision_temp[0]
+            # accuracy_global =accuracy_global+accuracy_temp[0]
+            # AUC_global = AUC_global+AUC_temp[0]
             if (global_step%5000):
-                print("Step: "+str(global_step)+"  Loss: "+str(loss_temp)+
-                "  precision: "+str(precision_global/global_step)+
-                "  accuracy: "+str(accuracy_global/global_step)+
-                "  AUC: "+str(AUC_global/global_step))
+                print("Step: "+str(global_step)+"  Loss: "+str(loss_temp))
+                # print("Step: "+str(global_step)+"  Loss: "+str(loss_temp)+
+                # "  precision: "+str(precision_global/global_step)+
+                # "  accuracy: "+str(accuracy_global/global_step)+
+                # "  AUC: "+str(AUC_global/global_step))
     print("Training finished")
+    print("   ")
+    print("Test started")
+    brt_val,bp_val,bb_val,bc_val= sess.run([brt_t,bp_t,bb_t,bc_t])
+    cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_t,cb_t,cp_t,crt_t,l_t])
+    bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
+    bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
+    brt_val = np.array(brt_val).reshape((-1, 1))
+    bp_val = np.array(bp_val).reshape((-1, 1))
+    prediction_eval = []
+    label_eval = []
+    # for i in range(0,38480):
+    for i in range(0,iteration_test):
+        prediction_temp,label_temp= sess.run(
+        [final_result,ph_label], feed_dict=
+        {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+        ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+        ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+        ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+        ph_label:l_val})
+        # prediction_eval.append(prediction_temp[0][0])
+        # label_eval.append(label_temp[0][0])
+        prediction_eval.append(prediction_temp[0])
+        label_eval.append(label_temp[0])
+
+    prediction_eval = np.array(prediction_eval)
+    label_eval = np.array(label_eval)
+    print(prediction_eval)
+    print("  ")
+    print(label_eval)
+    AUC = metrics.roc_auc_score(label_eval,prediction_eval)
+    print("AUC:  "+str(AUC))
     coord.request_stop()
     coord.join(threats)
-# ————————————————————————————
+# ———————————————————————————
 #Evaluation start
 # ————————————————————————————
