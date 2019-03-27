@@ -20,8 +20,8 @@ testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\
 
 # filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 
-# filename = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-
+training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
 #total 192403 records
 #categories (1,738), brand (1,3526)
@@ -31,9 +31,9 @@ testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\
 # ————————————————————————————
 #training set
 
-epoch = 0
+epoch = 50
 iteration = 307844
-iteration_test = 60000#60658
+iteration_test = 60658
 reader = tf.TFRecordReader()
 train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
 _, serialized_example = reader.read(train_queue)
