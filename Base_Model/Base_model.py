@@ -15,13 +15,11 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
-# training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-# testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
+training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 
-# filename = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-
-training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
+# training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+# testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
 #total 192403 records
 #categories (1,738), brand (1,3526)
@@ -31,7 +29,7 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 200
+epoch = 1
 iteration = 307844
 iteration_test = 60658
 reader = tf.TFRecordReader()
@@ -246,9 +244,8 @@ with tf.Session() as sess:
     bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
     brt_val = np.array(brt_val).reshape((-1, 1))
     bp_val = np.array(bp_val).reshape((-1, 1))
-    for i in range(epoch):
-        print("Epoch No. "+str(i+1)+" started "+"\n")
-        for j in range(iteration):
+    for i in range(0,epoch):
+        for j in range(0,iteration):
             global_step = i*iteration+j
             sess.run(train_step, feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
@@ -265,6 +262,7 @@ with tf.Session() as sess:
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
             ph_label:l_val})
 
+            print(l_val)
             # precision_global =precision_global+precision_temp[0]
             # accuracy_global =accuracy_global+accuracy_temp[0]
             # AUC_global = AUC_global+AUC_temp[0]
