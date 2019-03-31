@@ -268,12 +268,8 @@ with tf.Session() as sess:
             # precision_global =precision_global+precision_temp[0]
             # accuracy_global =accuracy_global+accuracy_temp[0]
             # AUC_global = AUC_global+AUC_temp[0]
-            if (global_step%50000):
-                print("Step: "+str(global_step)+"  Loss: "+str(loss_temp))
-                # print("Step: "+str(global_step)+"  Loss: "+str(loss_temp)+
-                # "  precision: "+str(precision_global/global_step)+
-                # "  accuracy: "+str(accuracy_global/global_step)+
-                # "  AUC: "+str(AUC_global/global_step))
+            if (global_step%50000==0):
+                print("Epoch No."+str(i+1)+" Step: "+str(global_step)+"  Loss: "+str(loss_temp))
     print("Training finished")
     print("   ")
     print("Test started")
@@ -294,8 +290,8 @@ with tf.Session() as sess:
         ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
         ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
         ph_label:l_val})
-        # prediction_eval.append(prediction_temp[0][0])
-        # label_eval.append(label_temp[0][0])
+
+        print(label_temp)
         prediction_eval.append(prediction_temp[0])
         label_eval.append(label_temp[0])
 
