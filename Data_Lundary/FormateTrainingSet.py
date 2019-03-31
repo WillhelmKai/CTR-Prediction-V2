@@ -41,18 +41,18 @@ def _bytes_feature(value):
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
 #destination
-# tfrecord_train = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-# tfrecord_test = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
+# tfrecord_train = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet_small.tfrecords'
+# tfrecord_test = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet_small.tfrecords'
 # text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
-tfrecord_train = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-tfrecord_test = '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
-text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
+# tfrecord_train = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+# tfrecord_test = '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
+# text_json_add = '/home/ubuntu/fyp2/LundaryBack/StrcuturedTextOnly.json'
 data_str = open(text_json_add).read()
 df = pd.read_json(data_str, lines= True)
 # ————————————————————————————
 # ————————————————————————————
-# df = df[0:int(len(df)*0.01)]
+df = df[0:int(len(df)*0.01)]
 # ————————————————————————————
 # ————————————————————————————
 # creat empty list with the length of df 
@@ -90,7 +90,8 @@ reviewID_test = reviewID_dic[int(0.8*len(reviewID_dic))+1:]
 # ————————————————————————————
 lower_boundary = 3  #if the num of user behavior lower than this num, record will be abandoned 
 acc = 0
-no_value = 0 
+no_value_p = 0
+no_value_n = 0 
 writer = tf.python_io.TFRecordWriter(tfrecord_train)
 for reviewerID in reviewID_train.itertuples(index = False):
     #search all his or her historical behaviors sorted by time
@@ -113,8 +114,6 @@ for reviewerID in reviewID_train.itertuples(index = False):
                 candidate_review_time = his_behavior.loc[i]['unixReviewTime']
                 true_label = [1.0, 0.0]
 
-                # print(str(behavior_asin))
-                # break
                 example = tf.train.Example(features = tf.train.Features(feature = {
                 'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(str(behavior_asin), encoding = "utf8")])),
                 'behavior_categories':_bytes_feature(toBytes(behavior_categories)),
@@ -131,8 +130,10 @@ for reviewerID in reviewID_train.itertuples(index = False):
 
                 serialized = example.SerializeToString()
                 writer.write(serialized)
+            except Exception as e:
+                no_value_p = no_value_p+1
 
-
+            try:
                 candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
                 candidate_true_asin = candidate_false['asin']
                 candidate_true_categories = candidate_false['categories'] #candidate ad
@@ -157,9 +158,10 @@ for reviewerID in reviewID_train.itertuples(index = False):
 
                 serialized = example.SerializeToString()
                 writer.write(serialized)
+                print("11111")
 
             except Exception as e:
-                no_value = no_value+1
+                no_value_n = no_value_n+1
     acc = acc+1
     # break
     if (acc%50000):
@@ -167,13 +169,15 @@ for reviewerID in reviewID_train.itertuples(index = False):
 writer.close()
 print("Training generating done")
 print("total record  "+str(acc))
-print("no value record "+str(no_value))
+print("no value record p "+str(no_value_p))
+print("no value record n "+str(no_value_n))
 print("   ")
 # ————————————————————————————
 # generate testing set
 # ————————————————————————————
 acc = 0
-no_value = 0 
+no_value_p = 0
+no_value_n = 0 
 writer = tf.python_io.TFRecordWriter(tfrecord_test)
 for reviewerID in reviewID_test.itertuples(index = False):
     #search all his or her historical behaviors sorted by time
@@ -196,8 +200,6 @@ for reviewerID in reviewID_test.itertuples(index = False):
                 candidate_review_time = his_behavior.loc[i]['unixReviewTime']
                 true_label = [1.0, 0.0]
 
-                # print(str(behavior_asin))
-                # break
                 example = tf.train.Example(features = tf.train.Features(feature = {
                 'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(str(behavior_asin), encoding = "utf8")])),
                 'behavior_categories':_bytes_feature(toBytes(behavior_categories)),
@@ -215,7 +217,10 @@ for reviewerID in reviewID_test.itertuples(index = False):
                 serialized = example.SerializeToString()
                 writer.write(serialized)
 
+            except Exception as e:
+                no_value_p = no_value_p+1
 
+            try:
                 candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
                 candidate_true_asin = candidate_false['asin']
                 candidate_true_categories = candidate_false['categories'] #candidate ad
@@ -240,18 +245,19 @@ for reviewerID in reviewID_test.itertuples(index = False):
 
                 serialized = example.SerializeToString()
                 writer.write(serialized)
+                print("22222")
 
             except Exception as e:
-                no_value = no_value+1
+                no_value_n = no_value_n+1
     acc = acc+1
-    # break
     if (acc%50000):
         print('\r', str(acc/len(reviewID_dic)).ljust(10),end='')
 writer.close()
 
 print("Testing generating done")
 print("total record  "+str(acc))
-print("no value record "+str(no_value))
+print("no value record p "+str(no_value_p))
+print("no value record n "+str(no_value_n))
 # ————————————————————————————
 # the end
 # ————————————————————————————
