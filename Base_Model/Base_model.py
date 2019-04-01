@@ -16,11 +16,11 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
-training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
+# training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+# testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 
-# training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-# testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
+training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
 #total 192403 records
 #categories (1,738), brand (1,3526)
@@ -30,7 +30,7 @@ testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\
 # ————————————————————————————
 #training set
 
-epoch = 1
+epoch = 10
 iteration = 307844
 iteration_test = 60658
 reader = tf.TFRecordReader()
@@ -223,9 +223,6 @@ final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
 
-precision=tf.metrics.precision(ph_label, final_result)
-accuracy =tf.metrics.accuracy(ph_label, final_result)
-AUC = tf.metrics.auc(ph_label, final_result)
 
 train_step = tf.train.AdamOptimizer(1e-6).minimize(loss)
 # ————————————————————————————
@@ -256,15 +253,15 @@ with tf.Session() as sess:
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
             ph_label:l_val})
 
-            loss_temp,precision_temp,accuracy_temp,AUC_temp= sess.run(
-            [loss,precision,accuracy,AUC], feed_dict=
+            loss_temp= sess.run(
+            [loss], feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
             ph_label:l_val})
 
-            if (global_step%50000==0):
+            if (global_step%5000==0):
                 print("Epoch No."+str(i+1)+" Step: "+str(global_step)+"  Loss: "+str(loss_temp))
     print("Training finished")
     print("   ")
