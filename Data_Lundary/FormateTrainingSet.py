@@ -41,9 +41,9 @@ def _bytes_feature(value):
 #CandidateAd[1](asin, brand, categories, unixReviewTime, price), label[1] ]
 # ————————————————————————————
 #destination
-tfrecord_train = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet_small.tfrecords'
-tfrecord_test = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet_small.tfrecords'
-text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
+# tfrecord_train = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet_small.tfrecords'
+# tfrecord_test = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet_small.tfrecords'
+# text_json_add = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\StrcuturedTextOnly.json'
 
 # tfrecord_train = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 # tfrecord_test = '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
@@ -111,15 +111,35 @@ for reviewerID in reviewID_train.itertuples(index = False):
                 candidate_true_categories = his_behavior.loc[i]['categories'] #candidate ad
                 candidate_true_brand = his_behavior.loc[i]['brand']
                 candidate_true_price = his_behavior.loc[i]['price']
-                candidate_true_time = his_behavior.loc[i]['unixReviewTime']
+                candidate_review_time = his_behavior.loc[i]['unixReviewTime']
                 true_label = [1.0, 0.0]
 
+                example = tf.train.Example(features = tf.train.Features(feature = {
+                'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(str(behavior_asin), encoding = "utf8")])),
+                'behavior_categories':_bytes_feature(toBytes(behavior_categories)),
+                'behavior_brand':_bytes_feature(toBytes(behavior_brand)),
+                'behavior_price':_bytes_feature(toBytes(behavior_price)),
+                'behavior_review_time':_bytes_feature(toBytes(behavior_review_time)),
+                'candidate_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_true_asin, encoding = "utf8")])),
+                'candidate_categories':_bytes_feature(toBytes(candidate_true_categories)),
+                'candidate_brand':_bytes_feature(toBytes(candidate_true_brand)),
+                'candidate_price':_bytes_feature(toBytes(candidate_true_price)),
+                'candidate_review_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_review_time])),
+                'label':tf.train.Feature(float_list = tf.train.FloatList(value=true_label))
+                }))
+
+                serialized = example.SerializeToString()
+                writer.write(serialized)
+            except Exception as e:
+                no_value_p = no_value_p+1
+
+            try:
                 candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
-                candidate_false_asin = candidate_false['asin']
-                candidate_false_categories = candidate_false['categories'] #candidate ad
-                candidate_false_brand = candidate_false['brand']
-                candidate_false_price = candidate_false['price']
-                candidate_false_time = candidate_false['unixReviewTime']
+                candidate_true_asin = candidate_false['asin']
+                candidate_true_categories = candidate_false['categories'] #candidate ad
+                candidate_true_brand = candidate_false['brand']
+                candidate_true_price = candidate_false['price']
+                candidate_review_time = candidate_false['unixReviewTime']
                 false_label = [0.0, 1.0]
 
                 example = tf.train.Example(features = tf.train.Features(feature = {
@@ -128,26 +148,20 @@ for reviewerID in reviewID_train.itertuples(index = False):
                 'behavior_brand':_bytes_feature(toBytes(behavior_brand)),
                 'behavior_price':_bytes_feature(toBytes(behavior_price)),
                 'behavior_review_time':_bytes_feature(toBytes(behavior_review_time)),
-
-                'candidate_true_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_true_asin, encoding = "utf8")])),
-                'candidate_true_categories':_bytes_feature(toBytes(candidate_true_categories)),
-                'candidate_true_brand':_bytes_feature(toBytes(candidate_true_brand)),
-                'candidate_true_price':_bytes_feature(toBytes(candidate_true_price)),
-                'candidate_true_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_true_time])),
-                'label_true':tf.train.Feature(float_list = tf.train.FloatList(value=true_label)),
-
-                'candidate_false_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_false_asin, encoding = "utf8")])),
-                'candidate_false_categories':_bytes_feature(toBytes(candidate_false_categories)),
-                'candidate_false_brand':_bytes_feature(toBytes(candidate_false_brand)),
-                'candidate_false_price':_bytes_feature(toBytes(candidate_false_price)),
-                'candidate_false_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_false_time])),
-                'label_false':tf.train.Feature(float_list = tf.train.FloatList(value=false_label))
+                'candidate_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_true_asin, encoding = "utf8")])),
+                'candidate_categories':_bytes_feature(toBytes(candidate_true_categories)),
+                'candidate_brand':_bytes_feature(toBytes(candidate_true_brand)),
+                'candidate_price':_bytes_feature(toBytes(candidate_true_price)),
+                'candidate_review_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_review_time])),
+                'label':tf.train.Feature(float_list = tf.train.FloatList(value=false_label))
                 }))
 
                 serialized = example.SerializeToString()
                 writer.write(serialized)
+                print("11111")
+
             except Exception as e:
-                no_value_p = no_value_p+1
+                no_value_n = no_value_n+1
     acc = acc+1
     # break
     if (acc%50000):
@@ -183,15 +197,36 @@ for reviewerID in reviewID_test.itertuples(index = False):
                 candidate_true_categories = his_behavior.loc[i]['categories'] #candidate ad
                 candidate_true_brand = his_behavior.loc[i]['brand']
                 candidate_true_price = his_behavior.loc[i]['price']
-                candidate_true_time = his_behavior.loc[i]['unixReviewTime']
+                candidate_review_time = his_behavior.loc[i]['unixReviewTime']
                 true_label = [1.0, 0.0]
 
+                example = tf.train.Example(features = tf.train.Features(feature = {
+                'behavior_asin':tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(str(behavior_asin), encoding = "utf8")])),
+                'behavior_categories':_bytes_feature(toBytes(behavior_categories)),
+                'behavior_brand':_bytes_feature(toBytes(behavior_brand)),
+                'behavior_price':_bytes_feature(toBytes(behavior_price)),
+                'behavior_review_time':_bytes_feature(toBytes(behavior_review_time)),
+                'candidate_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_true_asin, encoding = "utf8")])),
+                'candidate_categories':_bytes_feature(toBytes(candidate_true_categories)),
+                'candidate_brand':_bytes_feature(toBytes(candidate_true_brand)),
+                'candidate_price':_bytes_feature(toBytes(candidate_true_price)),
+                'candidate_review_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_review_time])),
+                'label':tf.train.Feature(float_list = tf.train.FloatList(value=true_label))
+                }))
+
+                serialized = example.SerializeToString()
+                writer.write(serialized)
+
+            except Exception as e:
+                no_value_p = no_value_p+1
+
+            try:
                 candidate_false = generate_false_candidate(his_behavior.loc[0:i-1])
-                candidate_false_asin = candidate_false['asin']
-                candidate_false_categories = candidate_false['categories'] #candidate ad
-                candidate_false_brand = candidate_false['brand']
-                candidate_false_price = candidate_false['price']
-                candidate_false_time = candidate_false['unixReviewTime']
+                candidate_true_asin = candidate_false['asin']
+                candidate_true_categories = candidate_false['categories'] #candidate ad
+                candidate_true_brand = candidate_false['brand']
+                candidate_true_price = candidate_false['price']
+                candidate_review_time = candidate_false['unixReviewTime']
                 false_label = [0.0, 1.0]
 
                 example = tf.train.Example(features = tf.train.Features(feature = {
@@ -200,26 +235,20 @@ for reviewerID in reviewID_test.itertuples(index = False):
                 'behavior_brand':_bytes_feature(toBytes(behavior_brand)),
                 'behavior_price':_bytes_feature(toBytes(behavior_price)),
                 'behavior_review_time':_bytes_feature(toBytes(behavior_review_time)),
-
-                'candidate_true_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_true_asin, encoding = "utf8")])),
-                'candidate_true_categories':_bytes_feature(toBytes(candidate_true_categories)),
-                'candidate_true_brand':_bytes_feature(toBytes(candidate_true_brand)),
-                'candidate_true_price':_bytes_feature(toBytes(candidate_true_price)),
-                'candidate_true_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_true_time])),
-                'label_true':tf.train.Feature(float_list = tf.train.FloatList(value=true_label)),
-
-                'candidate_false_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_false_asin, encoding = "utf8")])),
-                'candidate_false_categories':_bytes_feature(toBytes(candidate_false_categories)),
-                'candidate_false_brand':_bytes_feature(toBytes(candidate_false_brand)),
-                'candidate_false_price':_bytes_feature(toBytes(candidate_false_price)),
-                'candidate_false_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_false_time])),
-                'label_false':tf.train.Feature(float_list = tf.train.FloatList(value=false_label))
+                'candidate_asin': tf.train.Feature(bytes_list = tf.train.BytesList(value = [bytes(candidate_true_asin, encoding = "utf8")])),
+                'candidate_categories':_bytes_feature(toBytes(candidate_true_categories)),
+                'candidate_brand':_bytes_feature(toBytes(candidate_true_brand)),
+                'candidate_price':_bytes_feature(toBytes(candidate_true_price)),
+                'candidate_review_time':tf.train.Feature(float_list = tf.train.FloatList(value=[candidate_review_time])),
+                'label':tf.train.Feature(float_list = tf.train.FloatList(value=false_label))
                 }))
 
                 serialized = example.SerializeToString()
                 writer.write(serialized)
+                print("22222")
+
             except Exception as e:
-                no_value_p = no_value_p+1
+                no_value_n = no_value_n+1
     acc = acc+1
     if (acc%50000):
         print('\r', str(acc/len(reviewID_dic)).ljust(10),end='')
