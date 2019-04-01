@@ -237,17 +237,18 @@ with tf.Session() as sess:
     sess.run(tf.local_variables_initializer())
     threats = tf.train.start_queue_runners(sess=sess, coord = coord)
 
-#retrive data
-    brt_val,bp_val,bb_val,bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
-    cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
-# reformate as the time series behavior 
-    bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
-    bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
-    brt_val = np.array(brt_val).reshape((-1, 1))
-    bp_val = np.array(bp_val).reshape((-1, 1))
     for i in range(0,epoch):
         for j in range(0,iteration):
             global_step = i*iteration+j
+            #retrive data
+            brt_val,bp_val,bb_val,bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
+            cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
+            # reformate as the time series behavior 
+            bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
+            bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
+            brt_val = np.array(brt_val).reshape((-1, 1))
+            bp_val = np.array(bp_val).reshape((-1, 1))
+
             sess.run(train_step, feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
@@ -263,25 +264,24 @@ with tf.Session() as sess:
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
             ph_label:l_val})
 
-            print(l_val)
-            # precision_global =precision_global+precision_temp[0]
-            # accuracy_global =accuracy_global+accuracy_temp[0]
-            # AUC_global = AUC_global+AUC_temp[0]
             if (global_step%50000==0):
                 print("Epoch No."+str(i+1)+" Step: "+str(global_step)+"  Loss: "+str(loss_temp))
     print("Training finished")
     print("   ")
     print("Test started")
-    brt_val,bp_val,bb_val,bc_val= sess.run([brt_t,bp_t,bb_t,bc_t])
-    cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_t,cb_t,cp_t,crt_t,l_t])
-    bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
-    bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
-    brt_val = np.array(brt_val).reshape((-1, 1))
-    bp_val = np.array(bp_val).reshape((-1, 1))
+
     prediction_eval = []
     label_eval = []
-    # for i in range(0,38480):
+
     for i in range(0,iteration_test):
+
+        brt_val,bp_val,bb_val,bc_val= sess.run([brt_t,bp_t,bb_t,bc_t])
+        cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_t,cb_t,cp_t,crt_t,l_t])
+        bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
+        bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
+        brt_val = np.array(brt_val).reshape((-1, 1))
+        bp_val = np.array(bp_val).reshape((-1, 1))
+
         prediction_temp,label_temp= sess.run(
         [final_result,ph_label], feed_dict=
         {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
