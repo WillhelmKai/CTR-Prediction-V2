@@ -290,7 +290,6 @@ with tf.Session() as sess:
         ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
         ph_label:l_val})
 
-        print(label_temp)
         prediction_eval.append(prediction_temp[0])
         label_eval.append(label_temp[0])
 
