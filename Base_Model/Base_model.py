@@ -30,7 +30,7 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 10
+epoch = 3
 iteration = 307844
 iteration_test = 60658
 reader = tf.TFRecordReader()
@@ -235,6 +235,9 @@ with tf.Session() as sess:
     threats = tf.train.start_queue_runners(sess=sess, coord = coord)
 
     for i in range(0,epoch):
+        epoch_loss = 0
+        print("    ")
+        print("Epoch No."+str(i+1)+" started")
         for j in range(0,iteration):
             global_step = i*iteration+j
             #retrive data
@@ -254,15 +257,17 @@ with tf.Session() as sess:
             ph_label:l_val})
 
             loss_temp= sess.run(
-            [loss], feed_dict=
+            loss, feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
             ph_label:l_val})
-
+            epoch_loss = epoch_loss +loss_temp
             if (global_step%5000==0):
-                print("Epoch No."+str(i+1)+" Step: "+str(global_step)+"  Loss: "+str(loss_temp))
+                print("         "+" Step: "+str(global_step)+"  Loss: "+str(loss_temp))
+        epoch_loss = epoch_loss/iteration
+        print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
     print("Training finished")
     print("   ")
     print("Test started")
@@ -270,8 +275,8 @@ with tf.Session() as sess:
     prediction_eval = []
     label_eval = []
 
+    testing_loss = 0
     for i in range(0,iteration_test):
-
         brt_val,bp_val,bb_val,bc_val= sess.run([brt_t,bp_t,bb_t,bc_t])
         cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_t,cb_t,cp_t,crt_t,l_t])
         bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
@@ -279,14 +284,14 @@ with tf.Session() as sess:
         brt_val = np.array(brt_val).reshape((-1, 1))
         bp_val = np.array(bp_val).reshape((-1, 1))
 
-        prediction_temp,label_temp= sess.run(
-        [final_result,ph_label], feed_dict=
+        prediction_temp,label_temp, loss_temp= sess.run(
+        [final_result,ph_label,loss], feed_dict=
         {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
         ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
         ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
         ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
         ph_label:l_val})
-
+        testing_loss = testing_loss+loss_temp
         prediction_eval.append(prediction_temp[0])
         label_eval.append(label_temp[0])
 
@@ -297,6 +302,7 @@ with tf.Session() as sess:
     print(label_eval)
     AUC = metrics.roc_auc_score(label_eval,prediction_eval)
     print("AUC:  "+str(AUC))
+    print("average testing loss "+str(testing_loss/iteration_test))
     coord.request_stop()
     coord.join(threats)
 # ———————————————————————————
