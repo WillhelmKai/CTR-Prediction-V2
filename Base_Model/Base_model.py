@@ -16,11 +16,11 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
-# training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-# testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
+training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 
-training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
+# training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+# testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
 #total 192403 records
 #categories (1,738), brand (1,3526)
@@ -117,6 +117,8 @@ ph_candidate_price = tf.placeholder(tf.float32, [None,1])
 ph_candidate_review_time = tf.placeholder(tf.float32, [None,1])
 
 ph_label = tf.placeholder(tf.float32, [None,2])
+
+ph_epoch_num = tf.placeholder(tf.float32)
 
 W_bc=weight_variable([738, 500]) #out [-1, 500]
 b_bc=bias_variable([500])
@@ -223,8 +225,9 @@ final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
 
-
-train_step = tf.train.AdamOptimizer(1e-5).minimize(loss)
+training_rate = 1e-4* (10**(-ph_epoch_num/10))
+train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
+# train_step = tf.train.AdamOptimizer(1e-5).minimize(loss)
 # ————————————————————————————
 #NN end
 # ————————————————————————————
@@ -248,25 +251,33 @@ with tf.Session() as sess:
             bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
             brt_val = np.array(brt_val).reshape((-1, 1))
             bp_val = np.array(bp_val).reshape((-1, 1))
-
+            
             sess.run(train_step, feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            ph_label:l_val})
+            ph_label:l_val, ph_epoch_num:i})
 
-            loss_temp= sess.run(
-            loss, feed_dict=
-            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            ph_label:l_val})
-            epoch_loss = epoch_loss +loss_temp
+            if (global_step%500==0):
+                loss_temp= sess.run(loss, feed_dict=
+                {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+                ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+                ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+                ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+                ph_label:l_val, ph_epoch_num:i})
+                epoch_loss = epoch_loss +loss_temp
+
             if (global_step%5000==0):
-                print("         "+" Step: "+str(global_step)+"  Loss: "+str(loss_temp))
-        epoch_loss = epoch_loss/iteration
+                current_rate= sess.run(training_rate, feed_dict=
+                {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+                ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+                ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+                ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+                ph_label:l_val, ph_epoch_num:i})
+                print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(loss_temp))
+
+        epoch_loss = epoch_loss/(iteration/500)
         print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
     print("Training finished")
     print("   ")
