@@ -16,6 +16,9 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
+def read_img():
+    result = 0
+    return result
 # training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 # testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 
@@ -187,9 +190,15 @@ b_crt=bias_variable([50])
 embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
 
 embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out [-1, 1050] intened to be [-1,1100]
+
+# ————————————————————————————
 #read the candidate img from the directory
+# ————————————————————————————
 
 
+# ————————————————————————————
+#img processing end
+# ————————————————————————————
 
 #attention machanism
 W_attention = weight_variable([1100,1100])
