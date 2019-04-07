@@ -30,7 +30,7 @@ testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\
 # ————————————————————————————
 #training set
 
-epoch =20 
+epoch =30 
 iteration = 307844
 iteration_test = 60658
 reader = tf.TFRecordReader()
@@ -239,6 +239,7 @@ with tf.Session() as sess:
 
     for i in range(0,epoch):
         epoch_loss = 0
+        5k_loss = 0
         print("    ")
         print("Epoch No."+str(i+1)+" started")
         for j in range(0,iteration):
@@ -267,6 +268,7 @@ with tf.Session() as sess:
                 ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
                 ph_label:l_val, ph_epoch_num:i})
                 epoch_loss = epoch_loss +loss_temp
+                5k_loss = 5k_loss+loss_temp
 
             if (global_step%5000==0):
                 current_rate= sess.run(training_rate, feed_dict=
@@ -275,7 +277,8 @@ with tf.Session() as sess:
                 ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
                 ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
                 ph_label:l_val, ph_epoch_num:i})
-                print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(loss_temp))
+                print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(5k_loss/10))
+                5k_loss = 0
 
         epoch_loss = epoch_loss/(iteration/500)
         print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
