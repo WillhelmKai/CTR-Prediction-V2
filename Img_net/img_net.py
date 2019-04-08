@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from sklearn import metrics
 import pandas as pd
+import cv2
 import numpy as np
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -16,14 +17,32 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
-def read_img():
-    result = 0
-    return result
-# training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-# testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
+def read_img(name):
+    img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
+    name = name[3:-2]
+    name = img_add+name+'.jpg'
+    #e.g. D:\Y4\FYP2\amazon\B00CAGAGTW.jpg
+    try:
+        result = cv2.resize(cv2.imread(name),(112,112), interpolation=cv2.INTER_CUBIC)
 
-training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
+    except Exception as e:
+        name = img_add+'0594514681.jpg'
+        result = cv2.resize(cv2.imread(name),(112,112), interpolation=cv2.INTER_CUBIC)
+        print("empty add")
+
+    result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+    result = result.astype(np.float32)
+    return result
+
+def behavior_img(behavior_asin):
+    behavior_asin = behavior_asin[3:-2]
+    print(behavior_asin)
+    return 0
+training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
+
+# training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+# testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
 #total 192403 records
 #categories (1,738), brand (1,3526)
@@ -33,9 +52,9 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch =25 
-iteration = 307844
-iteration_test = 60658
+epoch = 1 #25 
+iteration = 10 #307844
+iteration_test = 1#60658
 reader = tf.TFRecordReader()
 train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
 _, serialized_example = reader.read(train_queue)
@@ -68,8 +87,8 @@ cb_out = tf.cast(tf.decode_raw(features['candidate_brand'], tf.uint8), tf.float3
 cp_out = tf.cast(tf.decode_raw(features['candidate_price'], tf.uint8), tf.float32)
 
 
-ba_out = features['behavior_asin']
 ca_out = features['candidate_asin']
+ba_out = features['behavior_asin']
 crt_out = features['candidate_review_time']
 l_out = features['label']
 # ————————————————————————————
@@ -256,41 +275,46 @@ with tf.Session() as sess:
         print("Epoch No."+str(i+1)+" started")
         for j in range(0,iteration):
             global_step = i*iteration+j
-            #retrive data
+            #retrive data 
             brt_val,bp_val,bb_val,bc_val= sess.run([brt_out,bp_out,bb_out,bc_out])
             cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
+            ca_val, ba_val = sess.run([ca_out, ba_out[0]])
+
+            # ca_val = read_img(str(ca_val))
+            print(behavior_img(str(ba_val)))
+            print("   ")
             # reformate as the time series behavior 
             bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
             bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
             brt_val = np.array(brt_val).reshape((-1, 1))
             bp_val = np.array(bp_val).reshape((-1, 1))
-            
-            sess.run(train_step, feed_dict=
-            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            ph_label:l_val, ph_epoch_num:i})
 
-            if (global_step%500==0):
-                loss_temp= sess.run(loss, feed_dict=
-                {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-                ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-                ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-                ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-                ph_label:l_val, ph_epoch_num:i})
-                epoch_loss = epoch_loss +loss_temp
-                five_k_loss = five_k_loss+loss_temp
+            # sess.run(train_step, feed_dict=
+            # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            # ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            # ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+            # ph_label:l_val, ph_epoch_num:i})
 
-            if (global_step%5000==0):
-                current_rate= sess.run(training_rate, feed_dict=
-                {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-                ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-                ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-                ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-                ph_label:l_val, ph_epoch_num:i})
-                print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/10))
-                five_k_loss = 0 
+            # if (global_step%500==0):
+            #     loss_temp= sess.run(loss, feed_dict=
+            #     {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            #     ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            #     ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            #     ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+            #     ph_label:l_val, ph_epoch_num:i})
+            #     epoch_loss = epoch_loss +loss_temp
+            #     five_k_loss = five_k_loss+loss_temp
+
+            # if (global_step%5000==0):
+            #     current_rate= sess.run(training_rate, feed_dict=
+            #     {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            #     ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            #     ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            #     ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+            #     ph_label:l_val, ph_epoch_num:i})
+            #     print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/10))
+            #     five_k_loss = 0 
 
         epoch_loss = epoch_loss/(iteration/500)
         print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
