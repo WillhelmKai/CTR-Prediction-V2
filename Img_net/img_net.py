@@ -18,7 +18,7 @@ def bias_variable(shape):
     return tf.Variable(initial(shape))
 
 def read_img(name):
-    img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
+    # img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
     name = name[3:-2]
     name = img_add+name+'.jpg'
     #e.g. D:\Y4\FYP2\amazon\B00CAGAGTW.jpg
@@ -35,12 +35,24 @@ def read_img(name):
     return result
 
 def behavior_img(behavior_asin):
-    behavior_asin = behavior_asin[3:-2]
-    print(behavior_asin)
-    return 0
+    behavior_asin = behavior_asin.split("'")
+    result = []
+    for i in range(0,len(behavior_asin)):
+        #filte the unrelated info 
+        if(i%2):
+            try:
+                name = img_add+behavior_asin[i]+'.jpg'
+                temp = cv2.resize(cv2.imread(name),(112,112), interpolation=cv2.INTER_CUBIC)
+                result.append(temp)
+            except Exception as e:
+                name = img_add+'0594514681.jpg'
+                temp = cv2.resize(cv2.imread(name),(112,112), interpolation=cv2.INTER_CUBIC)
+                result.append(temp)
+                print("empty add")
+    return result
 training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
-
+img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
 # training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 # testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
