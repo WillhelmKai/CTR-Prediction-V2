@@ -152,9 +152,9 @@ def converlutional(x_image):
     #flaten and fully connect layer
     h_pool17_flat = tf.reshape(h_pool17, [-1, 7*7*256])
         #function layer1 
-    W_fc1 = weight_variable([7*7*256, 1024])
-    b_fc1 = bias_variable([1024])
-    h_fc1 = tf.nn.leaky_relu(tf.matmul(h_pool17_flat, W_fc1)+b_fc1)
+    W_fc1 = weight_variable([7*7*256, 500])
+    b_fc1 = bias_variable([500])
+    h_fc1 = tf.nn.tanh(tf.matmul(h_pool17_flat, W_fc1)+b_fc1)
     h_fc1_drop = tf.nn.dropout(h_fc1, 0.5)
     #out [1*1024]
     return h_fc1_drop
