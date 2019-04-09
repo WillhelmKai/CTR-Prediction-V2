@@ -30,7 +30,7 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch =25 
+epoch =30 
 iteration = 307844
 iteration_test = 60658
 reader = tf.TFRecordReader()
@@ -223,11 +223,12 @@ W_fc_3 = weight_variable([80, 2])
 b_fc_3 = bias_variable([2])
 final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 
+regularizer = tf.nn.l2_loss(W_fc_3)+tf.nn.l2_loss(W_fc_2)+tf.nn.l2_loss(W_fc_1)+tf.nn.l2_loss(W_NN_input)+tf.nn.l2_loss(W_crt)+tf.nn.l2_loss(W_cp)+tf.nn.l2_loss(W_cb)+tf.nn.l2_loss(W_cc)+tf.nn.l2_loss(W_bc)+tf.nn.l2_loss(W_bb)+tf.nn.l2_loss(W_brt)+tf.nn.l2_loss(W_bp)
+
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
 
-training_rate = 1e-4* (10**(-ph_epoch_num/10))
-train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
-# train_step = tf.train.AdamOptimizer(1e-5).minimize(loss)
+training_rate = 1e-5* (10**(-ph_epoch_num/25))
+train_step = tf.train.AdamOptimizer(training_rate).minimize(loss+0.005*loss)
 # ————————————————————————————
 #NN end
 # ————————————————————————————
@@ -270,14 +271,14 @@ with tf.Session() as sess:
                 epoch_loss = epoch_loss +loss_temp
                 five_k_loss = five_k_loss+loss_temp
 
-            if (global_step%5000==0):
+            if (global_step%50000==0):
                 current_rate= sess.run(training_rate, feed_dict=
                 {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
                 ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
                 ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
                 ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
                 ph_label:l_val, ph_epoch_num:i})
-                print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/10))
+                print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/100))
                 five_k_loss = 0 
 
         epoch_loss = epoch_loss/(iteration/500)
