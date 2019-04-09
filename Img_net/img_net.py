@@ -8,6 +8,8 @@ import pandas as pd
 import cv2
 import numpy as np
 import os
+# import sys
+# np.set_printoptions(threshold=sys.maxsize)
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 def weight_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
@@ -50,9 +52,12 @@ def behavior_img(behavior_asin):
                 result.append(temp)
                 print("empty add")
     return result
+
 training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
+
+
 # training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 # testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
@@ -292,8 +297,9 @@ with tf.Session() as sess:
             cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
             ca_val, ba_val = sess.run([ca_out, ba_out[0]])
 
-            # ca_val = read_img(str(ca_val))
-            print(behavior_img(str(ba_val)))
+            ca_val = read_img(str(ca_val))
+            print(ca_val)
+            # print(behavior_img(str(ba_val)))
             print("   ")
             # reformate as the time series behavior 
             bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
