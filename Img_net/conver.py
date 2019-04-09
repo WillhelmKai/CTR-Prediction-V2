@@ -156,5 +156,4 @@ def converlutional(x_image):
     b_fc1 = bias_variable([500])
     h_fc1 = tf.nn.tanh(tf.matmul(h_pool17_flat, W_fc1)+b_fc1)
     h_fc1_drop = tf.nn.dropout(h_fc1, 0.5)
-    #out [1*1024]
     return h_fc1_drop
