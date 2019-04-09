@@ -1,3 +1,13 @@
+import tensorflow as tf
+
+def weight_variable(shape):
+    initial = tf.contrib.layers.xavier_initializer()
+    return tf.Variable(initial(shape))
+
+def bias_variable(shape):
+    initial = tf.contrib.layers.xavier_initializer()
+    return tf.Variable(initial(shape))
+
 def max_pool_2x2(x):
     # stride [1, x_movement, y_movement, 1] the first and last digit must be 1
     return tf.nn.max_pool(x, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
@@ -44,7 +54,7 @@ def converlutional(x_image):
     W_conv4 = weight_variable([3,3,32,32]) # patch 3*3, in size 32, out size 32
     b_conv4 = bias_variable([32])
     h_conv4_nom = norm(conv2d(h_conv3, W_conv4) + b_conv4,32)
-    h_conv4 = tf.nn.releaky_relulu(h_conv4_nom) # output size 56*56*32
+    h_conv4 = tf.nn.leaky_relu(h_conv4_nom) # output size 56*56*32
     # h_conv4 = tf.nn.leaky_relu(conv2d(h_conv3, W_conv4) + b_conv4)
 
         #conv1.4 in 56*56 out 56*56
