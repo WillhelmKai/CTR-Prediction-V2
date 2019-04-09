@@ -21,7 +21,6 @@ def bias_variable(shape):
     return tf.Variable(initial(shape))
 
 def read_img(name):
-    # img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
     name = name[3:-2]
     name = img_add+name+'.jpg'
     #e.g. D:\Y4\FYP2\amazon\B00CAGAGTW.jpg
@@ -150,13 +149,13 @@ ph_behavior_categories = tf.placeholder(tf.float32, [None,738])
 ph_behavior_brand = tf.placeholder(tf.float32, [None,3526])
 ph_behavior_review_time = tf.placeholder(tf.float32, [None,1])
 ph_behavior_price = tf.placeholder(tf.float32, [None,1])
+ph_behavior_asin_img = tf.placeholder(tf.float32, [None, 112,112,3])#behavior img
 
 ph_candidate_categories = tf.placeholder(tf.float32, [None,738])
 ph_candidate_brand = tf.placeholder(tf.float32, [None,3526])
 ph_candidate_price = tf.placeholder(tf.float32, [None,1])
 ph_candidate_review_time = tf.placeholder(tf.float32, [None,1])
-#candidate img 
-ph_candidate_asign_img = tf.placeholder(tf.float32, [None, 112,112,3])
+ph_candidate_asign_img = tf.placeholder(tf.float32, [None, 112,112,3])#candidate img 
 
 ph_label = tf.placeholder(tf.float32, [None,2])
 
@@ -211,6 +210,7 @@ first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
 # ————————————————————————————
 #interest evolving layer start
 # ————————————————————————————
+embeded_ca = conver.converlutional(ph_candidate_asign_img) #out [-1,500]
 #embedding candidate features
 W_cc=weight_variable([738, 500]) #out [-1, 500]
 b_cc=bias_variable([500])
@@ -228,7 +228,7 @@ W_crt=weight_variable([1, 50]) #out [-1, 50]
 b_crt=bias_variable([50])
 embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
 
-embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out [-1, 1050] intened to be [-1,1100]
+embedding_candidate_out = tf.concat([embeded_ca,embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out  [-1,1600]
 
 # ————————————————————————————
 #read the candidate img from the directory
@@ -239,7 +239,7 @@ embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ct
 #img processing end
 # ————————————————————————————
 
-#attention machanism
+#attention machanism out[-1,1100]
 W_attention = weight_variable([1100,1100])
 attention_intermidiate_output = tf.matmul(first_GRU_outputs, tf.matmul(W_attention, tf.transpose(embedding_candidate_out)))
 attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf.exp(attention_intermidiate_output)))
