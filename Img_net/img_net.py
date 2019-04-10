@@ -39,6 +39,7 @@ def read_img(name):
 def behavior_img(behavior_asin):
     behavior_asin = behavior_asin.split("'")
     result = []
+    # result = np.empty([len(behavior_asin), 112,112,3])
     for i in range(0,len(behavior_asin)):
         #filte the unrelated info 
         if(i%2):
@@ -51,6 +52,8 @@ def behavior_img(behavior_asin):
                 temp = cv2.resize(cv2.imread(name),(112,112), interpolation=cv2.INTER_CUBIC)
                 result.append(temp)
                 print("empty add")
+    result = np.array(result)
+    # print(result.shape())
     return result
 
 training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
@@ -177,8 +180,17 @@ W_bp=weight_variable([1, 50]) #out [-1, 50]
 b_bp=bias_variable([50])
 embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
 
+embeded_ba = []
+ba_length =tf.shape(ph_behavior_asin_img)
+ba_length = ba_length[0]
+for i in range(0,int(ba_length)):
+    embeded_ba.applend(conver.converlutional(ph_behavior_asin_img[i]))
+
+
 embedding_behavior_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
 embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
+
+
 # ————————————————————————————
 #Embedding Layer end
 # ————————————————————————————
@@ -228,7 +240,8 @@ W_crt=weight_variable([1, 50]) #out [-1, 50]
 b_crt=bias_variable([50])
 embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
 
-embedding_candidate_out = tf.concat([embeded_ca,embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out  [-1,1600]
+# embedding_candidate_out = tf.concat([embeded_ca,embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out  [-1,1600]
+embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out  [-1,1600]
 
 # ————————————————————————————
 #read the candidate img from the directory
@@ -273,7 +286,7 @@ h_fc_2 = tf.nn.tanh(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
 W_fc_3 = weight_variable([80, 2])
 b_fc_3 = bias_variable([2])
 final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
-
+final_result = tf.nn.dropout(final_result, 0.5)
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
 
 training_rate = 1e-4* (10**(-ph_epoch_num/10))
@@ -300,15 +313,24 @@ with tf.Session() as sess:
             cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_out,cb_out,cp_out,crt_out,l_out])
             ca_val, ba_val = sess.run([ca_out, ba_out[0]])
 
-            ca_val = read_img(str(ca_val))
-            print(ca_val)
-            # print(behavior_img(str(ba_val)))
-            print("   ")
             # reformate as the time series behavior 
+            ca_val = read_img(str(ca_val)).reshape([-1,112,112,3])
+            ba_val = behavior_img(str(ba_val)).reshape([-1,112,112,3])
             bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
             bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
             brt_val = np.array(brt_val).reshape((-1, 1))
             bp_val = np.array(bp_val).reshape((-1, 1))
+
+            temp = sess.run(embeded_ba, feed_dict=
+            {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+            ph_label:l_val, ph_epoch_num:i
+            ,ph_candidate_asign_img:ca_val
+            ,ph_behavior_asin_img:ba_val})
+            # print(ba_val.shape)
+            print(temp)
 
             # sess.run(train_step, feed_dict=
             # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
