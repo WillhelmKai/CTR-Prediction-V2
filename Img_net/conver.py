@@ -65,7 +65,6 @@ def converlutional(x_image):
     h_conv5 = tf.nn.leaky_relu(conv2d(h_conv4, W_conv5) + b_conv5)
     #####################
 
-
     #4 conv layers
         #conv2.1 in 56*56 out 
     W_conv6 = weight_variable([3,3,32,64]) # patch 3*3, in size 32, out size 64
@@ -96,8 +95,6 @@ def converlutional(x_image):
     h_conv9 = tf.nn.leaky_relu(conv2d(h_conv8, W_conv9) + b_conv9)
     h_pool9 = max_pool_2x2(h_conv9)  # output size 28*28*64
     #######################
-
-
     #4 conv layers
         #conv3.1 in 28*28 out 
     W_conv10 = weight_variable([3,3,64,128]) # patch 3*3, in size 64, out size 128
