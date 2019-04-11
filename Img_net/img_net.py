@@ -73,7 +73,7 @@ img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
 #training set
 
 epoch = 1 #25 
-iteration = 30 #307844
+iteration = 5 #307844
 iteration_test = 100#60658
 reader = tf.TFRecordReader()
 train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
@@ -385,6 +385,10 @@ with tf.Session() as sess:
     for i in range(0,iteration_test):
         brt_val,bp_val,bb_val,bc_val= sess.run([brt_t,bp_t,bb_t,bc_t])
         cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_t,cb_t,cp_t,crt_t,l_t])
+        ca_val, ba_val = sess.run([ca_t, ba_t[0]])
+        ca_val = read_img(str(ca_val)).reshape([-1,112,112,3])
+        ba_val = behavior_img(str(ba_val)).reshape([-1,112,112,3])
+
         bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
         bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
         brt_val = np.array(brt_val).reshape((-1, 1))
@@ -396,7 +400,8 @@ with tf.Session() as sess:
         ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
         ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
         ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-        ph_label:l_val})
+        ph_label:l_val,
+        ph_candidate_asign_img:ca_val,ph_behavior_asin_img:ba_val})
         testing_loss = testing_loss+loss_temp
         prediction_eval.append(prediction_temp[0])
         label_eval.append(label_temp[0])
