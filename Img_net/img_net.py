@@ -73,8 +73,8 @@ img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
 #training set
 
 epoch = 1 #25 
-iteration = 10 #307844
-iteration_test = 1#60658
+iteration = 30 #307844
+iteration_test = 100#60658
 reader = tf.TFRecordReader()
 train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
 _, serialized_example = reader.read(train_queue)
@@ -180,17 +180,8 @@ W_bp=weight_variable([1, 50]) #out [-1, 50]
 b_bp=bias_variable([50])
 embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
 
-embeded_ba = []
-ba_length =tf.shape(ph_behavior_asin_img)
-ba_length = ba_length[0]
-for i in range(0,int(ba_length)):
-    embeded_ba.applend(conver.converlutional(ph_behavior_asin_img[i]))
-
-
 embedding_behavior_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
 embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
-
-
 # ————————————————————————————
 #Embedding Layer end
 # ————————————————————————————
@@ -222,7 +213,6 @@ first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
 # ————————————————————————————
 #interest evolving layer start
 # ————————————————————————————
-embeded_ca = conver.converlutional(ph_candidate_asign_img) #out [-1,500]
 #embedding candidate features
 W_cc=weight_variable([738, 500]) #out [-1, 500]
 b_cc=bias_variable([500])
@@ -240,17 +230,8 @@ W_crt=weight_variable([1, 50]) #out [-1, 50]
 b_crt=bias_variable([50])
 embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
 
-# embedding_candidate_out = tf.concat([embeded_ca,embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out  [-1,1600]
 embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#out  [-1,1600]
 
-# ————————————————————————————
-#read the candidate img from the directory
-# ————————————————————————————
-
-
-# ————————————————————————————
-#img processing end
-# ————————————————————————————
 
 #attention machanism out[-1,1100]
 W_attention = weight_variable([1100,1100])
@@ -265,6 +246,39 @@ second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_inpu
 # ————————————————————————————
 #interest evolving layer end
 # ————————————————————————————
+
+
+# ————————————————————————————
+#read the candidate img from the directory
+# ————————————————————————————
+embeded_ca = conver.converlutional(ph_candidate_asign_img) #out [-1,500] candidate img
+
+embeded_ba = conver.converlutional(ph_behavior_asin_img) #out [-1,500] behavior img
+embeded_ba = tf.reshape(embeded_ba,[-1,500,1])
+
+img_init_state = cell.zero_state(batch_size=500,dtype = tf.float32) #batch size intented to be, out can be [-1, 1100] multiply oneby one
+img_GRU_outputs, img_final_state = tf.nn.dynamic_rnn(cell, embeded_ba, initial_state=img_init_state, time_major=True)
+
+#attention for img
+img_GRU_outputs = tf.reshape(img_GRU_outputs, [-1,500])
+W_img_attention = weight_variable([500,500])
+img_intermidiate_output = tf.matmul(img_GRU_outputs, tf.matmul(W_img_attention, tf.transpose(embeded_ca)))
+img_attention_output = tf.div(tf.exp(img_intermidiate_output),tf.reduce_sum(tf.exp(img_intermidiate_output)))
+
+#second GRU for img
+img_second_GRU_input = tf.reshape(tf.matmul(img_attention_output, embeded_ca), [-1,500,1]) #[deepth, 1100]
+img_init_state_second = cell.zero_state(batch_size=500,dtype = tf.float32) 
+img_second_GRU_outputs, img_final_state_second = tf.nn.dynamic_rnn(cell, img_second_GRU_input, initial_state=img_init_state_second, time_major=True)
+
+img_W_NN_input = weight_variable([500, 1])
+img_b_NN_input = bias_variable([1])
+img_NN_input_per= tf.nn.tanh(tf.matmul(tf.transpose(tf.reshape(img_second_GRU_outputs,[-1, 500])), tf.reshape(img_second_GRU_outputs,[-1, 500]))+img_b_NN_input)
+img_NN_input_per = tf.transpose(tf.nn.tanh(tf.matmul(img_NN_input_per, img_W_NN_input)+img_b_NN_input))
+# ————————————————————————————
+#img processing end
+# ————————————————————————————
+
+
 # ————————————————————————————
 #NN start
 # ————————————————————————————
@@ -273,9 +287,10 @@ W_NN_input = weight_variable([1100, 1])
 b_NN_input = bias_variable([1])
 NN_input_per= tf.nn.tanh(tf.matmul(tf.transpose(tf.reshape(second_GRU_outputs,[-1, 1100])), tf.reshape(second_GRU_outputs,[-1, 1100]))+b_NN_input)
 NN_input = tf.concat([tf.transpose(tf.nn.tanh(tf.matmul(NN_input_per, W_NN_input)+b_NN_input))
-    ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
+    ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price,
+    img_NN_input_per,embeded_ca], 1)
 
-W_fc_1 = weight_variable([5365, 200])
+W_fc_1 = weight_variable([6365, 200])
 b_fc_1 = bias_variable([200])
 h_fc_1 = tf.nn.tanh(tf.matmul(NN_input, W_fc_1)+b_fc_1)
 
@@ -291,6 +306,8 @@ loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label
 
 training_rate = 1e-4* (10**(-ph_epoch_num/10))
 train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
+
+
 # train_step = tf.train.AdamOptimizer(1e-5).minimize(loss)
 # ————————————————————————————
 #NN end
@@ -316,12 +333,13 @@ with tf.Session() as sess:
             # reformate as the time series behavior 
             ca_val = read_img(str(ca_val)).reshape([-1,112,112,3])
             ba_val = behavior_img(str(ba_val)).reshape([-1,112,112,3])
+
             bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
             bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
             brt_val = np.array(brt_val).reshape((-1, 1))
             bp_val = np.array(bp_val).reshape((-1, 1))
 
-            temp = sess.run(embeded_ba, feed_dict=
+            sess.run(train_step, feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
@@ -329,35 +347,30 @@ with tf.Session() as sess:
             ph_label:l_val, ph_epoch_num:i
             ,ph_candidate_asign_img:ca_val
             ,ph_behavior_asin_img:ba_val})
-            # print(ba_val.shape)
-            print(temp)
 
-            # sess.run(train_step, feed_dict=
-            # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            # ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            # ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            # ph_label:l_val, ph_epoch_num:i})
+            if (global_step%500==0):
+                loss_temp= sess.run(loss, feed_dict=
+                {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+                ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+                ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+                ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+                ph_label:l_val, ph_epoch_num:i
+                ,ph_candidate_asign_img:ca_val
+                ,ph_behavior_asin_img:ba_val})
+                epoch_loss = epoch_loss +loss_temp
+                five_k_loss = five_k_loss+loss_temp
 
-            # if (global_step%500==0):
-            #     loss_temp= sess.run(loss, feed_dict=
-            #     {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            #     ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            #     ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            #     ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            #     ph_label:l_val, ph_epoch_num:i})
-            #     epoch_loss = epoch_loss +loss_temp
-            #     five_k_loss = five_k_loss+loss_temp
-
-            # if (global_step%5000==0):
-            #     current_rate= sess.run(training_rate, feed_dict=
-            #     {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            #     ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            #     ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            #     ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            #     ph_label:l_val, ph_epoch_num:i})
-            #     print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/10))
-            #     five_k_loss = 0 
+            if (global_step%5000==0):
+                current_rate= sess.run(training_rate, feed_dict=
+                {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+                ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+                ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+                ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+                ph_label:l_val, ph_epoch_num:i
+                ,ph_candidate_asign_img:ca_val
+                ,ph_behavior_asin_img:ba_val})
+                print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/10))
+                five_k_loss = 0 
 
         epoch_loss = epoch_loss/(iteration/500)
         print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
