@@ -307,7 +307,6 @@ loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label
 training_rate = 1e-4* (10**(-ph_epoch_num/10))
 train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
 
-
 # train_step = tf.train.AdamOptimizer(1e-5).minimize(loss)
 # ————————————————————————————
 #NN end
