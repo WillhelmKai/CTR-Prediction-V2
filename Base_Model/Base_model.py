@@ -191,6 +191,7 @@ embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ct
 
 W_attention = weight_variable([1100,1100])
 attention_intermidiate_output = tf.matmul(first_GRU_outputs, tf.matmul(W_attention, tf.transpose(embedding_candidate_out)))
+attention_intermidiate_output = tf.nn.tanh(attention_intermidiate_output)
 attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf.exp(attention_intermidiate_output)))
 #output [-1, 1]
 # ————————————————————————————
