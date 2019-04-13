@@ -371,7 +371,7 @@ with tf.Session() as sess:
                 print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/10))
                 five_k_loss = 0 
 
-        epoch_loss = epoch_loss/(iteration/500)
+        epoch_loss = epoch_loss/(iteration)
         print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
     print("Training finished")
     print("   ")
