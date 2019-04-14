@@ -29,7 +29,7 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 10 
+epoch = 25 
 iteration = 307844
 iteration_test = 60658
 reader = tf.TFRecordReader()
@@ -241,7 +241,7 @@ final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
 
-training_rate = 1e-5* (10**(-ph_epoch_num/25))
+training_rate = 1e-5* (10**(-ph_epoch_num/15))
 
 train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
 # train_step = tf.train.AdamOptimizer(training_rate).minimize(loss+0.005*regularizer)
