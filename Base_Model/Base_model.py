@@ -15,11 +15,11 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
-# training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
-# testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
+training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
+testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 
-training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
-testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
+# training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
+# testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ———————————————————————————— 
 #total 192403 records
 #categories (1,738), brand (1,3526)
@@ -29,9 +29,9 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 25 
-iteration = 307844
-iteration_test = 60658
+epoch = 1#25 
+iteration = 10#307844
+iteration_test = 10#60658
 reader = tf.TFRecordReader()
 train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
 _, serialized_example = reader.read(train_queue)
@@ -153,7 +153,9 @@ first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
         # ————————————————————————————
         #Auxiliary Loss start
         # ————————————————————————————
-        #target before sigmoid [-1, 1]
+Laux = tf.matmul(first_GRU_outputs, tf.reshape(embedding_behavior_out, [1100,-1]))
+Laux = tf.log(tf.nn.sigmoid(tf.diag_part(Laux)))
+Laux = -1*tf.reduce_mean(Laux)
         # ————————————————————————————
         #Auxiliary Loss end
         # ————————————————————————————
@@ -183,7 +185,8 @@ W_crt=weight_variable([1, 50]) #out [-1, 50]
 b_crt=bias_variable([50])
 embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
 
-embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#intened to be [-1,1100]
+embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)
+#intened to be [-1,1100]
 
 # ————————————————————————————
 #attention machanism
@@ -272,25 +275,34 @@ with tf.Session() as sess:
             brt_val = np.array(brt_val).reshape((-1, 1))
             bp_val = np.array(bp_val).reshape((-1, 1))
 
-            # temp, temp_state = sess.run([final_result, loss], feed_dict=
-            # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            # ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            # ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            # ph_label:l_val, ph_epoch_num:i})
-            # print(temp)
-            # print(temp_state)
-            # print("   ")
 
-            _, loss_temp = sess.run([train_step, loss], feed_dict=
+#prepare input for aux loss
+            # bc_aux = np.append(bc_val[1:],cc_val).reshape((-1, cc_val.shape[1]))
+            # bb_aux = np.append(bb_val[1:], cb_val).reshape((-1, cb_val.shape[1]))
+            # brt_aux = np.append(brt_val[1:], crt_val).reshape((-1,1))
+            # bp_aux = np.append(bp_val[1:], cp_val).reshape((-1,1))
+            # l_aux = np.ones((bc_aux.shape[0],1))
+            # if (l_val[0][0] == 0.0):
+            #     l_aux[len(l_aux)-1] = 0.0
+
+            temp= sess.run(Laux, feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
             ph_label:l_val, ph_epoch_num:i})
+            print(temp)
+            print("   ")
 
-            epoch_loss = epoch_loss +loss_temp
-            five_k_loss = five_k_loss+loss_temp
+            # _, loss_temp = sess.run([train_step, loss], feed_dict=
+            # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+            # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+            # ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+            # ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+            # ph_label:l_val, ph_epoch_num:i})
+
+            # epoch_loss = epoch_loss +loss_temp
+            # five_k_loss = five_k_loss+loss_temp
 
             if (global_step%50000==0):
                 current_rate= sess.run(training_rate, feed_dict=
