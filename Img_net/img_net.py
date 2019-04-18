@@ -5,9 +5,9 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from sklearn import metrics
 import pandas as pd
-import cv2
 import numpy as np
 import os
+import cv2
 import conver
 # import sys
 # np.set_printoptions(threshold=sys.maxsize)
@@ -152,12 +152,13 @@ ph_behavior_categories = tf.placeholder(tf.float32, [None,738])
 ph_behavior_brand = tf.placeholder(tf.float32, [None,3526])
 ph_behavior_review_time = tf.placeholder(tf.float32, [None,1])
 ph_behavior_price = tf.placeholder(tf.float32, [None,1])
-ph_behavior_asin_img = tf.placeholder(tf.float32, [None, 112,112,3])#behavior img
 
 ph_candidate_categories = tf.placeholder(tf.float32, [None,738])
 ph_candidate_brand = tf.placeholder(tf.float32, [None,3526])
 ph_candidate_price = tf.placeholder(tf.float32, [None,1])
 ph_candidate_review_time = tf.placeholder(tf.float32, [None,1])
+
+ph_behavior_asin_img = tf.placeholder(tf.float32, [None, 112,112,3])#behavior img
 ph_candidate_asign_img = tf.placeholder(tf.float32, [None, 112,112,3])#candidate img 
 
 ph_label = tf.placeholder(tf.float32, [None,2])
