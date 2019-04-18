@@ -8,6 +8,7 @@ import numpy as np
 import os
 import conver
 import cv2
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 def weight_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
@@ -108,6 +109,7 @@ img_add = 'D:\\Y4\\FYP2\\amazon_raw_data\\img_unziped\\Amazon_img\\'
 
 # training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 # testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
+# testing_set= '/home/ubuntu/fyp2/LundaryBack/Amazon_img/'
 # ———————————————————————————— 
 #total 192403 records
 #categories (1,738), brand (1,3526)
