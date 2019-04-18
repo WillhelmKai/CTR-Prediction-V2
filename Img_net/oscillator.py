@@ -6,8 +6,8 @@ import os
 import matplotlib.pyplot as plt
 
 def oscillator(I, u, v, z):
-    a1, a2, a3, a4 = -0.5, 0.55, 0.55, 0.5
-    b1, b2, b3, b4 = -0.5, -0.55, -0.55, 0.5
+    a1, a2, a3, a4 = 0.6, 0.6, -0.5, 0.5
+    b1, b2, b3, b4 = -0.6, -0.6, -0.5, 0.5
     k = 50
 
     u_v = math.tanh(a1*u + a2*v - a3*z + a4*I)
