@@ -7,13 +7,21 @@ import pandas as pd
 import numpy as np
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-def weight_variable(shape):
-    initial = tf.contrib.layers.xavier_initializer()
-    return tf.Variable(initial(shape))
+# def weight_variable(shape):
+#     initial = tf.contrib.layers.xavier_initializer()
+#     return tf.Variable(initial(shape))
 
-def bias_variable(shape):
-    initial = tf.contrib.layers.xavier_initializer()
-    return tf.Variable(initial(shape))
+# def bias_variable(shape):
+#     initial = tf.contrib.layers.xavier_initializer()
+#     return tf.Variable(initial(shape))
+
+def weight_variable(shape):
+    Weights = tf.Variable(tf.random_normal(shape))
+    return Weights
+
+def bias_variable(out_size):
+    biases = tf.Variable(tf.zeros(out_size) + 0.1)
+    return biases
 
 def norm(input, size):
     fc_mean, fc_var = tf.nn.moments(input, axes = [0])
@@ -78,7 +86,7 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 20
+epoch = 13
 iteration = 307844
 iteration_test = 60658
 reader = tf.TFRecordReader()
@@ -174,24 +182,34 @@ ph_label = tf.placeholder(tf.float32, [None,2])
 
 ph_epoch_num = tf.placeholder(tf.float32)
 
-W_bc=weight_variable([738, 500]) #out [-1, 500]
-b_bc=bias_variable([500])
-embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_categories, W_bc)+b_bc) 
+with tf.name_scope('W_bc'):
+    W_bc=weight_variable([738, 500]) #out [-1, 500]
+    b_bc=bias_variable([500])
+    embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_categories, W_bc)+b_bc) 
+    tf.summary.scalar('W_bc', W_bc)
 
-W_bb=weight_variable([3526, 500]) #out [-1, 500]
-b_bb=bias_variable([500])
-embeded_bb = tf.nn.tanh(tf.matmul(ph_behavior_brand, W_bb)+b_bb)
+with tf.name_scope('W_bb'):
+    W_bb=weight_variable([3526, 500]) #out [-1, 500]
+    b_bb=bias_variable([500])
+    embeded_bb = tf.nn.tanh(tf.matmul(ph_behavior_brand, W_bb)+b_bb)
+    tf.summary.scalar('W_bb', W_bb)
 
-W_brt=weight_variable([1, 50]) #out [-1, 50]
-b_brt=bias_variable([50])
-embeded_brt = tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt)
+with tf.name_scope('W_brt'):
+    W_brt=weight_variable([1, 50]) #out [-1, 50]
+    b_brt=bias_variable([50])
+    embeded_brt = tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt)
+    tf.summary.scalar('W_brt', W_brt)
 
-W_bp=weight_variable([1, 50]) #out [-1, 50]
-b_bp=bias_variable([50])
-embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
+with tf.name_scope('W_bp'):
+    W_bp=weight_variable([1, 50]) #out [-1, 50]
+    b_bp=bias_variable([50])
+    embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
+    tf.summary.scalar('W_bp', W_bp)
 
 embedding_behavior_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
-embedding_behavior_out = norm(embedding_behavior_out, 1100)
+with tf.name_scope('embedding_behavior_out'):
+    embedding_behavior_out = norm(embedding_behavior_out, 1100)
+    tf.summary.scalar('embedding_behavior_out', embedding_behavior_out)
 embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
 # ————————————————————————————
 #Embedding Layer end
@@ -201,30 +219,42 @@ embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
 # ————————————————————————————
 cell = tf.nn.rnn_cell.GRUCell(num_units = 1)
 init_state = cell.zero_state(batch_size=1100,dtype = tf.float32) #batch size intented to be, out can be [-1, 1100] multiply oneby one
-first_GRU_outputs, first_final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
+first_GRU_outputs_x, first_final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
 #output [length, 1100,num_units], final state [1100, num_units]
 
-first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
+first_GRU_outputs = tf.reshape(first_GRU_outputs_x, [-1,1100])
         # ————————————————————————————
         #Auxiliary Loss start
         # ————————————————————————————
-W_ac=weight_variable([738, 500]) #out [-1, 500]
-b_ac=bias_variable([500])
-embeded_ac = tf.nn.tanh(tf.matmul(ph_aux_categories, W_ac)+b_ac) 
+with tf.name_scope('W_ac'):
+    W_ac=weight_variable([738, 500]) #out [-1, 500]
+    b_ac=bias_variable([500])
+    embeded_ac = tf.nn.tanh(tf.matmul(ph_aux_categories, W_ac)+b_ac) 
+    tf.summary.scalar('W_ac', W_ac)
 
-W_ab=weight_variable([3526, 500]) #out [-1, 500]
-b_ab=bias_variable([500])
-embeded_ab = tf.nn.tanh(tf.matmul(ph_aux_brand, W_ab)+b_ab)
+with tf.name_scope('W_ab'):
+    W_ab=weight_variable([3526, 500]) #out [-1, 500]
+    b_ab=bias_variable([500])
+    embeded_ab = tf.nn.tanh(tf.matmul(ph_aux_brand, W_ab)+b_ab)
+    tf.summary.scalar('W_ab', W_ab)
 
-W_art=weight_variable([1, 50]) #out [-1, 50]
-b_art=bias_variable([50])
-embeded_art = tf.nn.tanh(tf.matmul(ph_aux_review_time, W_art)+b_art)
+with tf.name_scope('W_art'):
+    W_art=weight_variable([1, 50]) #out [-1, 50]
+    b_art=bias_variable([50])
+    embeded_art = tf.nn.tanh(tf.matmul(ph_aux_review_time, W_art)+b_art)
+    tf.summary.scalar('W_art', W_art)
 
-W_ap=weight_variable([1, 50]) #out [-1, 50]
-b_ap=bias_variable([50])
+with tf.name_scope('W_ap'):
+    W_ap=weight_variable([1, 50]) #out [-1, 50]
+    b_ap=bias_variable([50])
+    tf.summary.scalar('W_ap', W_ap)
+
 embeded_ap = tf.nn.tanh(tf.matmul(ph_aux_price, W_ap)+b_ap)
 embedding_aux_out = tf.concat([embeded_ac,embeded_ab,embeded_art,embeded_ap],1)
-embedding_aux_out = norm(embedding_aux_out, 1100)
+
+with tf.name_scope('embedding_aux_out'):
+    embedding_aux_out = norm(embedding_aux_out, 1100)
+    tf.summary.scalar('embedding_aux_out', embedding_aux_out)
 
 Laux = tf.matmul(first_GRU_outputs, tf.transpose(embedding_aux_out))
 Laux = tf.multiply(tf.log(tf.nn.sigmoid(tf.diag_part(Laux))), ph_aux_label)
@@ -294,18 +324,28 @@ second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_inpu
 #     ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
 
 NN_input = tf.concat([tf.transpose(final_state_second),ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
-NN_input = norm(NN_input, 5365)
-W_fc_1 = weight_variable([5365, 200])
-b_fc_1 = bias_variable([200])
-h_fc_1 = tf.nn.tanh(tf.matmul(NN_input, W_fc_1)+b_fc_1)
+with tf.name_scope('NN_input'):
+    NN_input = norm(NN_input, 5365)
+    tf.summary.scalar('NN_input', NN_input)
 
-W_fc_2 = weight_variable([200, 80])
-b_fc_2 = bias_variable([80])
-h_fc_2 = tf.nn.tanh(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
+with tf.name_scope('W_fc_1'):
+    W_fc_1 = weight_variable([5365, 200])
+    b_fc_1 = bias_variable([200])
+    h_fc_1 = tf.nn.tanh(tf.matmul(NN_input, W_fc_1)+b_fc_1)
+    tf.summary.scalar('W_fc_1', W_fc_1)
 
-W_fc_3 = weight_variable([80, 2])
-b_fc_3 = bias_variable([2])
-final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
+with tf.name_scope('W_fc_2'):
+    W_fc_2 = weight_variable([200, 80])
+    b_fc_2 = bias_variable([80])
+    h_fc_2 = tf.nn.tanh(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
+    tf.summary.scalar('W_fc_2', W_fc_2)
+
+with tf.name_scope('W_fc_3'):
+    W_fc_3 = weight_variable([80, 2])
+    b_fc_3 = bias_variable([2])
+    final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
+    tf.summary.scalar('W_fc_3', W_fc_3)
+
 
 # final_result = tf.nn.dropout(final_result, 0.5)
 # regularizer = tf.nn.l2_loss(W_fc_3)+tf.nn.l2_loss(W_fc_2)
@@ -314,7 +354,9 @@ final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
 # +tf.nn.l2_loss(W_bc)+tf.nn.l2_loss(W_bb)+tf.nn.l2_loss(W_brt)
 # +tf.nn.l2_loss(W_bp)
 
-loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
+with tf.name_scope('loss'):
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
+    tf.summary.scalar('loss', loss)
 
 training_rate = 1e-5* (10**(-ph_epoch_num/20))
 
@@ -326,6 +368,9 @@ train_step = tf.train.AdamOptimizer(training_rate).minimize(loss+Laux)
 #NN end
 # ————————————————————————————
 with tf.Session() as sess:
+    merged = tf.summary.merge_all()
+    writer = tf.summary.FileWriter('/home/ubuntu/fyp2/Base_model/logs', sess.graph)
+    # writer = tf.summary.FileWriter('/logs', sess.graph)
     coord = tf.train.Coordinator()
     sess.run(tf.global_variables_initializer())
     sess.run(tf.local_variables_initializer())
@@ -336,6 +381,8 @@ with tf.Session() as sess:
         five_k_loss = 0
         print("    ")
         print("Epoch No."+str(i+1)+" started")
+        if ((i+1)%8 == 0):
+            test()
         for j in range(0,iteration):
             global_step = i*iteration+j
             #retrive data
@@ -356,7 +403,7 @@ with tf.Session() as sess:
             if (l_val[0][0] == 0.0):
                 l_aux[len(l_aux)-1] = -1.0
 
-            # temp= sess.run(train_step, feed_dict=
+            # temp= sess.run(first_GRU_outputs_x, feed_dict=
             # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             # ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
@@ -364,7 +411,7 @@ with tf.Session() as sess:
             # ph_aux_categories:bc_aux, ph_aux_brand:bb_aux,
             # ph_aux_review_time:brt_aux, ph_aux_price:bp_aux, ph_aux_label:l_aux,
             # ph_label:l_val, ph_epoch_num:i})
-            # print(temp)
+            # print(temp.shape)
             # print("   ")
 
             _, loss_temp = sess.run([train_step, loss], feed_dict=
@@ -392,8 +439,7 @@ with tf.Session() as sess:
                 five_k_loss = 0 
 
         epoch_loss = epoch_loss/iteration
-        if (i+1%8 == 0):
-            test()
+
         print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
 
     test()
