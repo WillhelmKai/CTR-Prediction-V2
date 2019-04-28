@@ -7,70 +7,13 @@ import pandas as pd
 import numpy as np
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-# def weight_variable(shape):
-#     initial = tf.contrib.layers.xavier_initializer()
-#     return tf.Variable(initial(shape))
-
-# def bias_variable(shape):
-#     initial = tf.contrib.layers.xavier_initializer()
-#     return tf.Variable(initial(shape))
-
 def weight_variable(shape):
-    Weights = tf.Variable(tf.random_normal(shape))
-    return Weights
+    initial = tf.contrib.layers.xavier_initializer()
+    return tf.Variable(initial(shape))
 
-def bias_variable(out_size):
-    biases = tf.Variable(tf.zeros(out_size) + 0.1)
-    return biases
-
-def norm(input, size):
-    fc_mean, fc_var = tf.nn.moments(input, axes = [0])
-    scale = tf.Variable(tf.ones([size]))
-    shift = tf.Variable(tf.zeros([size]))
-    epsilon = 0.001
-    out = tf.nn.batch_normalization(input,fc_mean, fc_var, shift, scale,epsilon )
-    return out
-
-def test():
-    print("Training finished")
-    print("   ")
-    print("Test started")
-    prediction_eval = []
-    label_eval = []
-
-    testing_loss = 0
-    for i in range(0,iteration_test):
-        brt_val,bp_val,bb_val,bc_val= sess.run([brt_t,bp_t,bb_t,bc_t])
-        cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_t,cb_t,cp_t,crt_t,l_t])
-        bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
-        bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
-        brt_val = np.array(brt_val).reshape((-1, 1))
-        bp_val = np.array(bp_val).reshape((-1, 1))
-
-        prediction_temp,label_temp, loss_temp= sess.run(
-        [final_result,ph_label,loss], feed_dict=
-        {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-        ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-        ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-        ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-        ph_label:l_val})
-        testing_loss = testing_loss+loss_temp
-        prediction_eval.append(prediction_temp[0])
-        label_eval.append(label_temp[0])
-    prediction_eval = np.array(prediction_eval)
-    label_eval = np.array(label_eval)
-    print(prediction_eval)
-    print("  ")
-    print(label_eval)
-    AUC = metrics.roc_auc_score(label_eval,prediction_eval)
-    print("AUC:  "+str(AUC))
-    print("average testing loss "+str(testing_loss/iteration_test))
-    coord.request_stop()
-    coord.join(threats)
-# ———————————————————————————
-#Evaluation start
-# ———————————————————————————
-    return 0
+def bias_variable(shape):
+    initial = tf.contrib.layers.xavier_initializer()
+    return tf.Variable(initial(shape))
 
 # training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 # testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
@@ -86,9 +29,10 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 13
+epoch = 5 
 iteration = 307844
 iteration_test = 60658
+rate = 1e-6
 reader = tf.TFRecordReader()
 train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
 _, serialized_example = reader.read(train_queue)
@@ -172,45 +116,39 @@ ph_candidate_brand = tf.placeholder(tf.float32, [None,3526])
 ph_candidate_price = tf.placeholder(tf.float32, [None,1])
 ph_candidate_review_time = tf.placeholder(tf.float32, [None,1])
 
-ph_aux_categories = tf.placeholder(tf.float32, [None,738])
-ph_aux_brand = tf.placeholder(tf.float32, [None,3526])
-ph_aux_price = tf.placeholder(tf.float32, [None,1])
-ph_aux_review_time = tf.placeholder(tf.float32, [None,1])
-ph_aux_label = tf.placeholder(tf.float32, [None,1])
-
 ph_label = tf.placeholder(tf.float32, [None,2])
 
 ph_epoch_num = tf.placeholder(tf.float32)
 
-with tf.name_scope('W_bc'):
+with tf.name_scope('embeded_bc'):
     W_bc=weight_variable([738, 500]) #out [-1, 500]
     b_bc=bias_variable([500])
     embeded_bc = tf.nn.tanh(tf.matmul(ph_behavior_categories, W_bc)+b_bc) 
-    tf.summary.scalar('W_bc', W_bc)
+    tf.summary.histogram('embeded_bc', embeded_bc)
 
-with tf.name_scope('W_bb'):
+with tf.name_scope('embeded_bb'):
     W_bb=weight_variable([3526, 500]) #out [-1, 500]
     b_bb=bias_variable([500])
     embeded_bb = tf.nn.tanh(tf.matmul(ph_behavior_brand, W_bb)+b_bb)
-    tf.summary.scalar('W_bb', W_bb)
+    tf.summary.histogram('embeded_bb', embeded_bb)
 
-with tf.name_scope('W_brt'):
+with tf.name_scope('embeded_brt'):
     W_brt=weight_variable([1, 50]) #out [-1, 50]
     b_brt=bias_variable([50])
     embeded_brt = tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt)
-    tf.summary.scalar('W_brt', W_brt)
+    tf.summary.histogram('embeded_brt', embeded_brt)
 
-with tf.name_scope('W_bp'):
+with tf.name_scope('embeded_bp'):
     W_bp=weight_variable([1, 50]) #out [-1, 50]
     b_bp=bias_variable([50])
     embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
-    tf.summary.scalar('W_bp', W_bp)
+    tf.summary.histogram('embeded_bp', embeded_bp)
 
-embedding_behavior_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
 with tf.name_scope('embedding_behavior_out'):
-    embedding_behavior_out = norm(embedding_behavior_out, 1100)
-    tf.summary.scalar('embedding_behavior_out', embedding_behavior_out)
-embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
+    embedding_behavior_out = tf.concat([embeded_bc,embeded_bb,embeded_brt,embeded_bp], 1) #out [-1, 1100]
+    embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
+    tf.summary.histogram('embedding_behavior_out', embedding_behavior_out)
+
 # ————————————————————————————
 #Embedding Layer end
 # ————————————————————————————
@@ -219,46 +157,17 @@ embedding_behavior_out = tf.reshape(embedding_behavior_out,[-1,1100,1])
 # ————————————————————————————
 cell = tf.nn.rnn_cell.GRUCell(num_units = 1)
 init_state = cell.zero_state(batch_size=1100,dtype = tf.float32) #batch size intented to be, out can be [-1, 1100] multiply oneby one
-first_GRU_outputs_x, first_final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
+first_GRU_outputs, first_final_state = tf.nn.dynamic_rnn(cell, embedding_behavior_out, initial_state=init_state, time_major=True)
 #output [length, 1100,num_units], final state [1100, num_units]
+with tf.name_scope('first_GRU_outputs'):
+    first_GRU_outputs = tf.reshape(first_GRU_outputs, [-1,1100])
+    tf.summary.histogram('first_GRU_outputs', first_GRU_outputs)
 
-first_GRU_outputs = tf.reshape(first_GRU_outputs_x, [-1,1100])
+
         # ————————————————————————————
         #Auxiliary Loss start
         # ————————————————————————————
-with tf.name_scope('W_ac'):
-    W_ac=weight_variable([738, 500]) #out [-1, 500]
-    b_ac=bias_variable([500])
-    embeded_ac = tf.nn.tanh(tf.matmul(ph_aux_categories, W_ac)+b_ac) 
-    tf.summary.scalar('W_ac', W_ac)
-
-with tf.name_scope('W_ab'):
-    W_ab=weight_variable([3526, 500]) #out [-1, 500]
-    b_ab=bias_variable([500])
-    embeded_ab = tf.nn.tanh(tf.matmul(ph_aux_brand, W_ab)+b_ab)
-    tf.summary.scalar('W_ab', W_ab)
-
-with tf.name_scope('W_art'):
-    W_art=weight_variable([1, 50]) #out [-1, 50]
-    b_art=bias_variable([50])
-    embeded_art = tf.nn.tanh(tf.matmul(ph_aux_review_time, W_art)+b_art)
-    tf.summary.scalar('W_art', W_art)
-
-with tf.name_scope('W_ap'):
-    W_ap=weight_variable([1, 50]) #out [-1, 50]
-    b_ap=bias_variable([50])
-    tf.summary.scalar('W_ap', W_ap)
-
-embeded_ap = tf.nn.tanh(tf.matmul(ph_aux_price, W_ap)+b_ap)
-embedding_aux_out = tf.concat([embeded_ac,embeded_ab,embeded_art,embeded_ap],1)
-
-with tf.name_scope('embedding_aux_out'):
-    embedding_aux_out = norm(embedding_aux_out, 1100)
-    tf.summary.scalar('embedding_aux_out', embedding_aux_out)
-
-Laux = tf.matmul(first_GRU_outputs, tf.transpose(embedding_aux_out))
-Laux = tf.multiply(tf.log(tf.nn.sigmoid(tf.diag_part(Laux))), ph_aux_label)
-Laux = -1*tf.reduce_mean(Laux)
+        #target before sigmoid [-1, 1]
         # ————————————————————————————
         #Auxiliary Loss end
         # ————————————————————————————
@@ -270,25 +179,39 @@ Laux = -1*tf.reduce_mean(Laux)
 #interest evolving layer start
 # ————————————————————————————
 #embedding candidate features
-W_cc=weight_variable([738, 500]) #out [-1, 500]
-b_cc=bias_variable([500])
-embeded_cc = tf.nn.tanh(tf.matmul(ph_candidate_categories, W_cc)+b_cc) 
 
-W_cb=weight_variable([3526, 500]) #out [-1, 500]
-b_cb=bias_variable([500])
-embeded_cb = tf.nn.tanh(tf.matmul(ph_candidate_brand, W_cb)+b_cb)
+with tf.name_scope('embeded_cc'):
+    W_cc=weight_variable([738, 500]) #out [-1, 500]
+    b_cc=bias_variable([500])
+    embeded_cc = tf.nn.tanh(tf.matmul(ph_candidate_categories, W_cc)+b_cc) 
+    tf.summary.histogram('embeded_cc', embeded_cc)
 
-W_cp=weight_variable([1, 50]) #out [-1, 50]
-b_cp=bias_variable([50])
-embeded_cp = tf.nn.tanh(tf.matmul(ph_candidate_price, W_cp)+b_cp)
 
-W_crt=weight_variable([1, 50]) #out [-1, 50]
-b_crt=bias_variable([50])
-embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
+with tf.name_scope('embeded_cb'):
+    W_cb=weight_variable([3526, 500]) #out [-1, 500]
+    b_cb=bias_variable([500])
+    embeded_cb = tf.nn.tanh(tf.matmul(ph_candidate_brand, W_cb)+b_cb)
+    tf.summary.histogram('embeded_cb', embeded_cb)
 
-embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)
-embedding_candidate_out= norm(embedding_candidate_out, 1100)
-#intened to be [-1,1100]
+
+with tf.name_scope('embeded_cp'):
+    W_cp=weight_variable([1, 50]) #out [-1, 50]
+    b_cp=bias_variable([50])
+    embeded_cp = tf.nn.tanh(tf.matmul(ph_candidate_price, W_cp)+b_cp)
+    tf.summary.histogram('embeded_cp', embeded_cp)
+
+
+with tf.name_scope('embeded_ctr'):
+    W_crt=weight_variable([1, 50]) #out [-1, 50]
+    b_crt=bias_variable([50])
+    embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
+    tf.summary.histogram('embeded_ctr', embeded_ctr)
+
+
+with tf.name_scope('embedding_candidate_out'):
+    embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#intened to be [-1,1100]
+    tf.summary.histogram('embedding_candidate_out', embedding_candidate_out)
+
 
 # ————————————————————————————
 #attention machanism
@@ -297,9 +220,12 @@ embedding_candidate_out= norm(embedding_candidate_out, 1100)
 W_attention = weight_variable([1100,1100])
 attention_intermidiate_output = tf.matmul(first_GRU_outputs, tf.matmul(W_attention, tf.transpose(embedding_candidate_out)))
 #@@@@@@@@@@@@@@@@@@@
-# attention_intermidiate_output = tf.nn.tanh(attention_intermidiate_output)
+attention_intermidiate_output = tf.nn.tanh(attention_intermidiate_output)
 #@@@@@@@@@@@@@@@@@@@
-attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf.exp(attention_intermidiate_output)))
+with tf.name_scope('attention_output'):
+    attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf.exp(attention_intermidiate_output)))
+    tf.summary.histogram('attention_output', attention_output)
+
 #output [-1, 1]
 # ————————————————————————————
 #second GRU
@@ -307,7 +233,12 @@ attention_output = tf.div(tf.exp(attention_intermidiate_output),tf.reduce_sum(tf
 #multiplu the attention score with every single behavior to select the most relevent one
 second_GRU_input = tf.reshape(tf.multiply(attention_output, first_GRU_outputs), [-1,1100,1]) #[deepth, 1100]
 init_state_second = cell.zero_state(batch_size=1100,dtype = tf.float32) 
-second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_input, initial_state=init_state_second, time_major=True)
+
+with tf.name_scope('final_state_second'):
+    second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_input, initial_state=init_state_second, time_major=True)
+    tf.summary.histogram('final_state_second', final_state_second)
+
+
 #out size [length, 1100, 1]
 # ————————————————————————————
 #interest evolving layer end
@@ -323,28 +254,29 @@ second_GRU_outputs, final_state_second = tf.nn.dynamic_rnn(cell, second_GRU_inpu
 # NN_input = tf.concat([tf.transpose(tf.nn.tanh(tf.matmul(NN_input_per, W_NN_input)+b_NN_input))
 #     ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
 
-NN_input = tf.concat([tf.transpose(final_state_second),ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
 with tf.name_scope('NN_input'):
-    NN_input = norm(NN_input, 5365)
-    tf.summary.scalar('NN_input', NN_input)
+    NN_input = tf.concat([tf.transpose(final_state_second),ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
+    tf.summary.histogram('NN_input', NN_input)
 
-with tf.name_scope('W_fc_1'):
+with tf.name_scope('h_fc_1'):
     W_fc_1 = weight_variable([5365, 200])
     b_fc_1 = bias_variable([200])
     h_fc_1 = tf.nn.tanh(tf.matmul(NN_input, W_fc_1)+b_fc_1)
-    tf.summary.scalar('W_fc_1', W_fc_1)
+    tf.summary.histogram('h_fc_1', h_fc_1)
 
-with tf.name_scope('W_fc_2'):
+
+with tf.name_scope('h_fc_2'):
     W_fc_2 = weight_variable([200, 80])
     b_fc_2 = bias_variable([80])
     h_fc_2 = tf.nn.tanh(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
-    tf.summary.scalar('W_fc_2', W_fc_2)
+    tf.summary.histogram('h_fc_2', h_fc_2)
 
-with tf.name_scope('W_fc_3'):
+
+with tf.name_scope('h_fc_2'):
     W_fc_3 = weight_variable([80, 2])
     b_fc_3 = bias_variable([2])
     final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
-    tf.summary.scalar('W_fc_3', W_fc_3)
+    tf.summary.histogram('h_fc_2', h_fc_2)
 
 
 # final_result = tf.nn.dropout(final_result, 0.5)
@@ -358,9 +290,9 @@ with tf.name_scope('loss'):
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
     tf.summary.scalar('loss', loss)
 
-training_rate = 1e-5* (10**(-ph_epoch_num/20))
+training_rate = rate* (10**(-ph_epoch_num/15))
 
-train_step = tf.train.AdamOptimizer(training_rate).minimize(loss+Laux)
+train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
 # train_step = tf.train.AdamOptimizer(training_rate).minimize(loss+0.005*regularizer)
 
 
@@ -381,8 +313,6 @@ with tf.Session() as sess:
         five_k_loss = 0
         print("    ")
         print("Epoch No."+str(i+1)+" started")
-        if ((i+1)%8 == 0):
-            test()
         for j in range(0,iteration):
             global_step = i*iteration+j
             #retrive data
@@ -394,52 +324,78 @@ with tf.Session() as sess:
             brt_val = np.array(brt_val).reshape((-1, 1))
             bp_val = np.array(bp_val).reshape((-1, 1))
 
-            # prepare input for aux loss
-            bc_aux = np.append(bc_val[1:],cc_val).reshape((-1, cc_val.shape[1]))
-            bb_aux = np.append(bb_val[1:], cb_val).reshape((-1, cb_val.shape[1]))
-            brt_aux = np.append(brt_val[1:], crt_val).reshape((-1,1))
-            bp_aux = np.append(bp_val[1:], cp_val).reshape((-1,1))
-            l_aux = np.ones((bc_aux.shape[0],1))
-            if (l_val[0][0] == 0.0):
-                l_aux[len(l_aux)-1] = -1.0
-
-            # temp= sess.run(first_GRU_outputs_x, feed_dict=
+            # temp, temp_state = sess.run([final_result, loss], feed_dict=
             # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             # ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
             # ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            # ph_aux_categories:bc_aux, ph_aux_brand:bb_aux,
-            # ph_aux_review_time:brt_aux, ph_aux_price:bp_aux, ph_aux_label:l_aux,
             # ph_label:l_val, ph_epoch_num:i})
-            # print(temp.shape)
+            # print(temp)
+            # print(temp_state)
             # print("   ")
 
-            _, loss_temp = sess.run([train_step, loss], feed_dict=
+            _, loss_temp,re = sess.run([train_step, loss,merged], feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
             ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
             ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            ph_aux_categories:bc_aux, ph_aux_brand:bb_aux,
-            ph_aux_review_time:brt_aux, ph_aux_price:bp_aux, ph_aux_label:l_aux,
             ph_label:l_val, ph_epoch_num:i})
 
             epoch_loss = epoch_loss +loss_temp
             five_k_loss = five_k_loss+loss_temp
 
+            if (global_step%2500==0):
+                writer.add_summary(re,global_step)
+
             if (global_step%50000==0):
                 current_rate= sess.run(training_rate, feed_dict=
                 {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            ph_aux_categories:bc_aux, ph_aux_brand:bb_aux,
-            ph_aux_review_time:brt_aux, ph_aux_price:bp_aux, ph_aux_label:l_aux,
-            ph_label:l_val, ph_epoch_num:i})
+                ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+                ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+                ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+                ph_label:l_val, ph_epoch_num:i})
                 print("         "+" Step: "+str(global_step)+" training rate : "+str(current_rate)+"  Loss: "+str(five_k_loss/50000))
                 five_k_loss = 0 
 
         epoch_loss = epoch_loss/iteration
-
         print("Epoch No."+str(i+1)+" finished mean loss "+str(epoch_loss))
+    print("Training finished")
+    print("   ")
+    print("Test started")
 
-    test()
+    prediction_eval = []
+    label_eval = []
+
+    testing_loss = 0
+    for i in range(0,iteration_test):
+        brt_val,bp_val,bb_val,bc_val= sess.run([brt_t,bp_t,bb_t,bc_t])
+        cc_val,cb_val,cp_val,crt_val,l_val= sess.run([cc_t,cb_t,cp_t,crt_t,l_t])
+        bc_val = np.array(bc_val).reshape((-1, cc_val.shape[1])) # [-1, 738] deepth of behavior 
+        bb_val = np.array(bb_val).reshape((-1, cb_val.shape[1])) # [-1, 3526]
+        brt_val = np.array(brt_val).reshape((-1, 1))
+        bp_val = np.array(bp_val).reshape((-1, 1))
+
+        prediction_temp,label_temp, loss_temp= sess.run(
+        [final_result,ph_label,loss], feed_dict=
+        {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+        ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+        ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+        ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+        ph_label:l_val})
+        testing_loss = testing_loss+loss_temp
+        prediction_eval.append(prediction_temp[0])
+        label_eval.append(label_temp[0])
+
+    prediction_eval = np.array(prediction_eval)
+    label_eval = np.array(label_eval)
+    print(prediction_eval)
+    print("  ")
+    print(label_eval)
+    AUC = metrics.roc_auc_score(label_eval,prediction_eval)
+    print("AUC:  "+str(AUC))
+    print("average testing loss "+str(testing_loss/iteration_test))
+    coord.request_stop()
+    coord.join(threats)
+# ———————————————————————————
+#Evaluation start
+# ———————————————————————————
