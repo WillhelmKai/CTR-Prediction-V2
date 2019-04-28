@@ -151,9 +151,9 @@ def converlutional(x_image):
         #conv4.4 in  out 7*7
     W_conv17 = weight_variable([3,3,256,256]) # patch 3*3, in size 256, out size 256
     b_conv17 = bias_variable([256])
-    h_conv17_nom = norm(conv2d(h_conv16, W_conv17) + b_conv17,256)
-    h_conv17 = tf.nn.leaky_relu(h_conv17_nom) # output size 14*14*256
-    # h_conv17 = tf.nn.leaky_relu(conv2d(h_conv16, W_conv17) + b_conv17)
+    # h_conv17_nom = norm(conv2d(h_conv16, W_conv17) + b_conv17,256)
+    # h_conv17 = tf.nn.leaky_relu(h_conv17_nom) # output size 14*14*256
+    h_conv17 = tf.nn.leaky_relu(conv2d(h_conv16, W_conv17) + b_conv17)
     h_pool17 = max_pool_2x2(h_conv17)  # output size 7*7*256
 
     #flaten and fully connect layer
