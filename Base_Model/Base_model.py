@@ -37,7 +37,7 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 8
+epoch = 15
 iteration = 307844
 iteration_test = 60658
 rate = 1e-5
