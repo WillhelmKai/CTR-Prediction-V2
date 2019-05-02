@@ -15,12 +15,20 @@ def bias_variable(shape):
     initial = tf.contrib.layers.xavier_initializer()
     return tf.Variable(initial(shape))
 
+def norm(input, size):
+    fc_mean, fc_var = tf.nn.moments(input, axes = [0])
+    scale = tf.Variable(tf.ones([size]))
+    shift = tf.Variable(tf.zeros([size]))
+    epsilon = 0.001
+    out = tf.nn.batch_normalization(input,fc_mean, fc_var, shift, scale,epsilon )
+    return out
+
 # training_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TrainingSet.tfrecords'
 # testing_set = 'C:\\Users\\willh\\Documents\\FYP2\\DataLundary\\RecordsTextOnly\\TestingSet.tfrecords'
 
 training_set = '/home/ubuntu/fyp2/LundaryBack/TrainingSet.tfrecords'
 testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
-# ———————————————————————————— 
+# ———————————————————————————— 0
 #total 192403 records
 #categories (1,738), brand (1,3526)
 #record strcuture: ID192403  review1689188 with 
@@ -29,16 +37,16 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 5 
+epoch = 8
 iteration = 307844
 iteration_test = 60658
-rate = 1e-6
+rate = 1e-5
 reader = tf.TFRecordReader()
 train_queue = tf.train.string_input_producer([training_set], num_epochs=None)
 _, serialized_example = reader.read(train_queue)
 
 # ————————————————————————————
-#read and decode training set
+#read and decode training serialized_example_test
 # ————————————————————————————
 features = tf.parse_single_example(serialized_example,
         features={
@@ -135,13 +143,13 @@ with tf.name_scope('embeded_bb'):
 with tf.name_scope('embeded_brt'):
     W_brt=weight_variable([1, 50]) #out [-1, 50]
     b_brt=bias_variable([50])
-    embeded_brt = tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt)
+    embeded_brt = norm(tf.nn.tanh(tf.matmul(ph_behavior_review_time, W_brt)+b_brt),50)
     tf.summary.histogram('embeded_brt', embeded_brt)
 
 with tf.name_scope('embeded_bp'):
     W_bp=weight_variable([1, 50]) #out [-1, 50]
     b_bp=bias_variable([50])
-    embeded_bp = tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp)
+    embeded_bp = norm(tf.nn.tanh(tf.matmul(ph_behavior_price, W_bp)+b_bp),50)
     tf.summary.histogram('embeded_bp', embeded_bp)
 
 with tf.name_scope('embedding_behavior_out'):
@@ -197,14 +205,14 @@ with tf.name_scope('embeded_cb'):
 with tf.name_scope('embeded_cp'):
     W_cp=weight_variable([1, 50]) #out [-1, 50]
     b_cp=bias_variable([50])
-    embeded_cp = tf.nn.tanh(tf.matmul(ph_candidate_price, W_cp)+b_cp)
+    embeded_cp = norm(tf.nn.tanh(tf.matmul(ph_candidate_price, W_cp)+b_cp),50)
     tf.summary.histogram('embeded_cp', embeded_cp)
 
 
 with tf.name_scope('embeded_ctr'):
     W_crt=weight_variable([1, 50]) #out [-1, 50]
     b_crt=bias_variable([50])
-    embeded_ctr = tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt)
+    embeded_ctr = norm(tf.nn.tanh(tf.matmul(ph_candidate_review_time, W_crt)+b_crt),50)
     tf.summary.histogram('embeded_ctr', embeded_ctr)
 
 
@@ -255,20 +263,21 @@ with tf.name_scope('final_state_second'):
 #     ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
 
 with tf.name_scope('NN_input'):
-    NN_input = tf.concat([tf.transpose(final_state_second),ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
+    # NN_input = tf.concat([tf.transpose(final_state_second),ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
+    NN_input = tf.concat([tf.transpose(final_state_second),embedding_candidate_out], 1)
     tf.summary.histogram('NN_input', NN_input)
 
 with tf.name_scope('h_fc_1'):
-    W_fc_1 = weight_variable([5365, 200])
+    W_fc_1 = weight_variable([2200, 200])
     b_fc_1 = bias_variable([200])
-    h_fc_1 = tf.nn.tanh(tf.matmul(NN_input, W_fc_1)+b_fc_1)
+    h_fc_1 = tf.nn.leaky_relu(tf.matmul(NN_input, W_fc_1)+b_fc_1)
     tf.summary.histogram('h_fc_1', h_fc_1)
 
 
 with tf.name_scope('h_fc_2'):
     W_fc_2 = weight_variable([200, 80])
     b_fc_2 = bias_variable([80])
-    h_fc_2 = tf.nn.tanh(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
+    h_fc_2 = tf.nn.leaky_relu(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
     tf.summary.histogram('h_fc_2', h_fc_2)
 
 
@@ -290,7 +299,7 @@ with tf.name_scope('loss'):
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
     tf.summary.scalar('loss', loss)
 
-training_rate = rate* (10**(-ph_epoch_num/15))
+training_rate = rate* (10**(-ph_epoch_num/8))
 
 train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
 # train_step = tf.train.AdamOptimizer(training_rate).minimize(loss+0.005*regularizer)
