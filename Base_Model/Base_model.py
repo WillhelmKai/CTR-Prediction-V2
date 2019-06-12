@@ -37,7 +37,7 @@ testing_set= '/home/ubuntu/fyp2/LundaryBack/TestingSet.tfrecords'
 # ————————————————————————————
 #training set
 
-epoch = 15
+epoch = 10
 iteration = 307844
 iteration_test = 60658
 rate = 1e-5
@@ -218,6 +218,10 @@ with tf.name_scope('embeded_ctr'):
 
 with tf.name_scope('embedding_candidate_out'):
     embedding_candidate_out = tf.concat([embeded_cc,embeded_cb,embeded_cp,embeded_ctr], 1)#intened to be [-1,1100]
+    # embedding_candidate_W = weight_variable([1, 1100])
+    # embedding_candidate_b = bias_variable([1100])
+    # embedding_candidate_out = tf.matmul(tf.transpose(embedding_candidate_out),embedding_candidate_out)
+    # embedding_candidate_out = tf.matmul(embedding_candidate_W,embedding_candidate_out)+embedding_candidate_b
     tf.summary.histogram('embedding_candidate_out', embedding_candidate_out)
 
 
@@ -256,21 +260,22 @@ with tf.name_scope('final_state_second'):
 #NN start
 # ————————————————————————————
 #flaten out put
-# W_NN_input = weight_variable([1100, 1])
-# b_NN_input = bias_variable([1])
-# NN_input_per= tf.nn.tanh(tf.matmul(tf.transpose(tf.reshape(second_GRU_outputs,[-1, 1100])), tf.reshape(second_GRU_outputs,[-1, 1100]))+b_NN_input)
-# NN_input = tf.concat([tf.transpose(tf.nn.tanh(tf.matmul(NN_input_per, W_NN_input)+b_NN_input))
-#     ,ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
-
 with tf.name_scope('NN_input'):
     # NN_input = tf.concat([tf.transpose(final_state_second),ph_candidate_categories,ph_candidate_brand,ph_candidate_price], 1)
     NN_input = tf.concat([tf.transpose(final_state_second),embedding_candidate_out], 1)
+    NN_W =weight_variable([1,2200])
+    NN_b =bias_variable([2200])
+    NN_input = tf.nn.leaky_relu(tf.matmul(NN_W,tf.matmul(tf.transpose(NN_input),NN_input))+NN_b)+NN_input
     tf.summary.histogram('NN_input', NN_input)
 
 with tf.name_scope('h_fc_1'):
     W_fc_1 = weight_variable([2200, 200])
     b_fc_1 = bias_variable([200])
     h_fc_1 = tf.nn.leaky_relu(tf.matmul(NN_input, W_fc_1)+b_fc_1)
+
+    W_fcc_1 = weight_variable([1, 200])
+    b_fcc_1 = bias_variable([200])
+    h_fc_1 = tf.nn.leaky_relu(tf.matmul(W_fcc_1,tf.matmul(tf.transpose(h_fc_1),h_fc_1))+b_fcc_1)+h_fc_1
     tf.summary.histogram('h_fc_1', h_fc_1)
 
 
@@ -278,22 +283,19 @@ with tf.name_scope('h_fc_2'):
     W_fc_2 = weight_variable([200, 80])
     b_fc_2 = bias_variable([80])
     h_fc_2 = tf.nn.leaky_relu(tf.matmul(h_fc_1, W_fc_2)+b_fc_2)
+
+    W_fcc_2 = weight_variable([1, 80])
+    b_fcc_2 = bias_variable([80])
+    h_fc_2 = tf.nn.leaky_relu(tf.matmul(W_fcc_2,tf.matmul(tf.transpose(h_fc_2),h_fc_2))+b_fcc_2)+h_fc_2
     tf.summary.histogram('h_fc_2', h_fc_2)
 
 
-with tf.name_scope('h_fc_2'):
+with tf.name_scope('h_fc_soft_max'):
     W_fc_3 = weight_variable([80, 2])
     b_fc_3 = bias_variable([2])
     final_result = tf.nn.softmax(tf.matmul(h_fc_2, W_fc_3)+b_fc_3)
     tf.summary.histogram('h_fc_2', h_fc_2)
 
-
-# final_result = tf.nn.dropout(final_result, 0.5)
-# regularizer = tf.nn.l2_loss(W_fc_3)+tf.nn.l2_loss(W_fc_2)
-# +tf.nn.l2_loss(W_fc_1)+tf.nn.l2_loss(W_NN_input)+tf.nn.l2_loss(W_crt)
-# +tf.nn.l2_loss(W_cp)+tf.nn.l2_loss(W_cb)+tf.nn.l2_loss(W_cc)
-# +tf.nn.l2_loss(W_bc)+tf.nn.l2_loss(W_bb)+tf.nn.l2_loss(W_brt)
-# +tf.nn.l2_loss(W_bp)
 
 with tf.name_scope('loss'):
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=ph_label,logits=final_result))
@@ -302,8 +304,6 @@ with tf.name_scope('loss'):
 training_rate = rate* (10**(-ph_epoch_num/8))
 
 train_step = tf.train.AdamOptimizer(training_rate).minimize(loss)
-# train_step = tf.train.AdamOptimizer(training_rate).minimize(loss+0.005*regularizer)
-
 
 # ————————————————————————————
 #NN end
@@ -333,16 +333,17 @@ with tf.Session() as sess:
             brt_val = np.array(brt_val).reshape((-1, 1))
             bp_val = np.array(bp_val).reshape((-1, 1))
 
-            # temp, temp_state = sess.run([final_result, loss], feed_dict=
-            # {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
-            # ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
-            # ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
-            # ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
-            # ph_label:l_val, ph_epoch_num:i})
-            # print(temp)
-            # print(temp_state)
-            # print("   ")
-
+        #     temp, t = sess.run([NN_input,loss], feed_dict=
+        #     {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
+        #     ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
+        #     ph_candidate_categories:cc_val, ph_candidate_brand:cb_val, 
+        #     ph_candidate_review_time:crt_val,ph_candidate_price:cp_val,
+        #     ph_label:l_val, ph_epoch_num:i})
+        #     print(temp.shape)
+        #     print(t.shape)
+        #     print("   ")
+        #     break
+        # break
             _, loss_temp,re = sess.run([train_step, loss,merged], feed_dict=
             {ph_behavior_categories:bc_val, ph_behavior_brand:bb_val, 
             ph_behavior_review_time:brt_val,ph_behavior_price:bp_val,
