@@ -24,4 +24,4 @@ Inspried by Alibaba's (DIN, DIEN, AMS) and MS'(DCN) works, we found a number of 
 >> Run FormateTrainingSet.py
 
 3. Try different models
-》 Run Base_model.py or img_net.py
+> Run Base_model.py or img_net.py
